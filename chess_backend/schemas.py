@@ -28,3 +28,14 @@ class PuzzleResponse(BaseModel):
 
     class config:
         from_attributes = True
+
+
+class PuzzleSubmit(BaseModel):
+    puzzle_id: int
+    user_move: str
+
+
+class PuzzleResultResponse(BaseModel):
+    is_correct: bool
+    message: str
+    correct_solution: str

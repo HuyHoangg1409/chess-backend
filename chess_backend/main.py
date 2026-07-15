@@ -99,3 +99,36 @@ def random_puzzles(
         )
 
     return puzzle
+
+
+@app.post(
+    "/puzzles/check",
+    response_model=schemas.PuzzleResultResponse,
+    status_code=status.HTTP_200_OK,
+)
+def check_puzzle_answer(
+    submission: schemas.PuzzleSubmit, db: Session = Depends(database.get_db)
+):
+    puzzle = (
+        db.query(models.Puzzles)
+        .filter(models.Puzzles.puzzle_id == submission.puzzle_id)
+        .first()
+    )
+    if not puzzle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thế cờ"
+        )
+
+    user_move_clean = submission.user_move.strip().lower()
+    correct_move_clean = puzzle.correct_moves.strip().lower()
+
+    if user_move_clean == correct_move_clean:
+        return schemas.PuzzleResultResponse(
+            is_correct=True, message="Đáp án đúng", correct_solution=correct_move_clean
+        )
+    else:
+        return schemas.PuzzleResultResponse(
+            is_correct=False,
+            message="Đáp án chưa chính xác",
+            correct_solution=correct_move_clean,
+        )
