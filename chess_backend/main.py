@@ -1,6 +1,7 @@
-from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi import FastAPI, status, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 import database
 import models
 import schemas
@@ -71,3 +72,30 @@ def create_puzzles(
     db.refresh(new_puzzle)
 
     return new_puzzle
+
+
+@app.get(
+    "/puzzles/random",
+    response_model=schemas.PuzzleResponse,
+    status_code=status.HTTP_200_OK,
+)
+def random_puzzles(
+    difficulty: str = Query(
+        "Easy", description="Độ khó của thế cờ: Easy, Medium, Hard"
+    ),
+    db: Session = Depends(database.get_db),
+):
+    puzzle = (
+        db.query(models.Puzzles)
+        .filter(models.Puzzles.difficulty == difficulty)
+        .order_by(func.random())
+        .first()
+    )
+
+    if not puzzle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không có thế cờ có mức độ khó tương ứng",
+        )
+
+    return puzzle
