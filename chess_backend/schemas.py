@@ -13,3 +13,18 @@ class UserResponse(BaseModel):
 
     class config:
         from_attributes = True
+
+
+class PuzzleCreate(BaseModel):
+    fen_position: str
+    correct_moves: str
+    difficulty: str
+
+
+class PuzzleResponse(BaseModel):
+    puzzle_id: int
+    fen_position: str
+    difficulty: str
+
+    class config:
+        from_attributes = True

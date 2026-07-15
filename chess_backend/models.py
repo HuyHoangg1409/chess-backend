@@ -17,7 +17,7 @@ class Puzzles(Base):
     puzzle_id = Column(Integer, primary_key=True, index=True)
     fen_position = Column(Text, nullable=False)
     correct_moves = Column(Text, nullable=False)
-    difficulty = Column(String)
+    difficulty = Column(String, nullable=False)
 
 
 class UserPuzzleHistory(Base):

@@ -2,3 +2,6 @@
 __pycache__/
 .vscode/
 .env
+engines/
+index.html
+fetch_puzzle.py
