@@ -10,8 +10,9 @@ ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 
-
 def hash_password(password: str) -> str:
+    if len(password) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
 

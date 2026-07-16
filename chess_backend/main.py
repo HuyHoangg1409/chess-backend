@@ -2,6 +2,7 @@ from fastapi import FastAPI, status, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import secure
 import database
 import models
 import schemas
@@ -32,7 +33,7 @@ def register_user(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tên đăng nhập đã tồn tại"
         )
 
-    hashed_password = user_data.password + "_hash"
+    hashed_password = secure.hash_password(user_data.password)
 
     new_user = models.User(username=user_data.username, password_hash=hashed_password)
 
@@ -41,6 +42,31 @@ def register_user(
     db.refresh(new_user)
 
     return new_user
+
+
+@app.post("/login")
+def login(user_data: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    user = (
+        db.query(models.User).filter(models.User.username == user_data.username).first()
+    )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Không tồn tại tài khoản"
+        )
+
+    if not secure.verify_password(user_data.password, user.password_hash): # type: ignore
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Mật khẩu sai"
+        )
+
+    access_token = secure.create_access_token(
+        data={"sub": user.username, "user_id": user.user_id}
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 
 @app.post(
