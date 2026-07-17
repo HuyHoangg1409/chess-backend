@@ -54,7 +54,7 @@ def login(user_data: schemas.UserCreate, db: Session = Depends(database.get_db))
             status_code=status.HTTP_400_BAD_REQUEST, detail="Không tồn tại tài khoản"
         )
 
-    if not secure.verify_password(user_data.password, user.password_hash): # type: ignore
+    if not secure.verify_password(user_data.password, user.password_hash):  # type: ignore
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Mật khẩu sai"
         )
@@ -63,10 +63,7 @@ def login(user_data: schemas.UserCreate, db: Session = Depends(database.get_db))
         data={"sub": user.username, "user_id": user.user_id}
     )
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.post(
