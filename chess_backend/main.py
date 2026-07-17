@@ -1,5 +1,6 @@
 from fastapi import FastAPI, status, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import secure
@@ -10,6 +11,19 @@ import schemas
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Chess API")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    user_info = secure.get_user_from_token(token)
+
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token hết hạn hoặc không hợp lệ. Đăng nhập lại",
+        )
+
+    return user_info
 
 
 @app.get("/")
