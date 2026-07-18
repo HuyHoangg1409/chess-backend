@@ -4,4 +4,4 @@ __pycache__/
 .env
 engines/
 index.html
-fetch_puzzle.py
+data
