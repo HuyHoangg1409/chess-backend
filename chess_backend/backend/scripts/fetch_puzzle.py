@@ -5,8 +5,8 @@ sys.path.append(parent_dir)
 csv_path = os.path.join(parent_dir, "data", "puzzles.csv")
 
 import pandas as pd
-from database import sessionLocal
-from models import Puzzles
+from backend.database import sessionLocal
+from backend.models import Puzzles
 
 
 def get_difficulty(rating: int):
@@ -21,7 +21,7 @@ def get_difficulty(rating: int):
 def load_puzzles_to_db(file_path):
     df = pd.read_csv(file_path, encoding="utf-8")
 
-    data = df[["FEN", "Moves", "Rating"]].sample(n=100)
+    data = df[["FEN", "Moves", "Rating"]].sample(n=200)
 
     db = sessionLocal()
     try:

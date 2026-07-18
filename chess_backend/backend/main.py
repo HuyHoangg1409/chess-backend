@@ -3,10 +3,10 @@ from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-import secure
-import database
-import models
-import schemas
+import backend.secure as secure
+import backend.database as database
+import backend.models as models
+import backend.schemas as schemas
 
 models.Base.metadata.create_all(bind=database.engine)
 
