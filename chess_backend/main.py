@@ -152,7 +152,7 @@ def random_puzzles(
 def check_puzzle_answer(
     submission: schemas.PuzzleSubmit, db: Session = Depends(database.get_db), current_user: dict = Depends(get_current_user)
 ):
-    print(f"{current_user['username']}, {current_user.get("user_id")}")
+    print(f"{current_user.get("sub")}, {current_user.get("user_id")}")
     puzzle = (
         db.query(models.Puzzles)
         .filter(models.Puzzles.puzzle_id == submission.puzzle_id)
