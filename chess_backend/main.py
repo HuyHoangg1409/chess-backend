@@ -16,8 +16,10 @@ oauth2_scheme = APIKeyHeader(name="Authorization", auto_error=False)
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Thiếu token")
-    
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Thiếu token"
+        )
+
     if token.lower().startswith("bearer "):
         token = token[7:]
 
@@ -150,9 +152,21 @@ def random_puzzles(
     status_code=status.HTTP_200_OK,
 )
 def check_puzzle_answer(
-    submission: schemas.PuzzleSubmit, db: Session = Depends(database.get_db), current_user: dict = Depends(get_current_user)
+    submission: schemas.PuzzleSubmit,
+    db: Session = Depends(database.get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     print(f"{current_user.get("sub")}, {current_user.get("user_id")}")
+    db_user = (
+        db.query(models.User)
+        .filter(models.User.username == current_user.get("sub"))
+        .first()
+    )
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
+        )
+
     puzzle = (
         db.query(models.Puzzles)
         .filter(models.Puzzles.puzzle_id == submission.puzzle_id)
@@ -167,10 +181,32 @@ def check_puzzle_answer(
     correct_move_clean = puzzle.correct_moves.strip().lower()
 
     if user_move_clean == correct_move_clean:
+        if puzzle.difficulty == "Easy":
+            db_user.elo_rating += 15
+        elif puzzle.difficulty == "Medium":
+            db_user.elo_rating += 20
+        elif puzzle.difficulty == "Hard":
+            db_user.elo_rating += 25
+
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+
         return schemas.PuzzleResultResponse(
             is_correct=True, message="Đáp án đúng", correct_solution=correct_move_clean
         )
     else:
+        if puzzle.difficulty == "Easy":
+            db_user.elo_rating -= 10
+        elif puzzle.difficulty == "Medium":
+            db_user.elo_rating -= 15
+        elif puzzle.difficulty == "Hard":
+            db_user.elo_rating -= 20
+
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+
         return schemas.PuzzleResultResponse(
             is_correct=False,
             message="Đáp án chưa chính xác",
