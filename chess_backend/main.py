@@ -1,6 +1,6 @@
 from fastapi import FastAPI, status, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import secure
@@ -11,10 +11,16 @@ import schemas
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Chess API")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = APIKeyHeader(name="Authorization", auto_error=False)
 
 
 def get_current_user(token: str = Depends(oauth2_scheme)):
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Thiếu token")
+    
+    if token.lower().startswith("bearer "):
+        token = token[7:]
+
     user_info = secure.get_user_from_token(token)
 
     if not user_info:
@@ -144,8 +150,9 @@ def random_puzzles(
     status_code=status.HTTP_200_OK,
 )
 def check_puzzle_answer(
-    submission: schemas.PuzzleSubmit, db: Session = Depends(database.get_db)
+    submission: schemas.PuzzleSubmit, db: Session = Depends(database.get_db), current_user: dict = Depends(get_current_user)
 ):
+    print(f"{current_user['username']}, {current_user.get("user_id")}")
     puzzle = (
         db.query(models.Puzzles)
         .filter(models.Puzzles.puzzle_id == submission.puzzle_id)
