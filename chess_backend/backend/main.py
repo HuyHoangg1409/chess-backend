@@ -130,7 +130,7 @@ def create_puzzles(
 
 
 @app.get(
-    "/puzzles/random",
+    "/puzzles/randomWithDifficulty",
     response_model=schemas.PuzzleResponse,
     status_code=status.HTTP_200_OK,
 )
