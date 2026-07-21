@@ -18,7 +18,7 @@ app.add_middleware(
     allow_origins=["http://localhost:5173", "http://127.0.0.1:8000/"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
 oauth2_scheme = APIKeyHeader(name="Authorization", auto_error=False)
@@ -134,7 +134,7 @@ def create_puzzles(
     response_model=schemas.PuzzleResponse,
     status_code=status.HTTP_200_OK,
 )
-def random_puzzles(
+def random_puzzles_with_difficulty(
     difficulty: str = Query(
         "Easy", description="Độ khó của thế cờ: Easy, Medium, Hard"
     ),
@@ -150,7 +150,23 @@ def random_puzzles(
     if not puzzle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không có thế cờ có mức độ khó tương ứng",
+            detail="Không có thế cờ có mức độ khó tương ứng"
+        )
+
+    return puzzle
+
+
+@app.get(
+    "/puzzles/randomWithoutDifficulty",
+    response_model=schemas.PuzzleResponse,
+    status_code=status.HTTP_200_OK,
+)
+def random_puzzles_without_difficulty(db: Session = Depends(database.get_db)):
+    puzzle = db.query(models.Puzzles).order_by(func.random()).first()
+
+    if not puzzle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy thế cờ"
         )
 
     return puzzle
