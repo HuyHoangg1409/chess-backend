@@ -1,6 +1,7 @@
 from fastapi import FastAPI, status, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.security import APIKeyHeader
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import backend.secure as secure
@@ -11,6 +12,15 @@ import backend.schemas as schemas
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Chess API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:8000/"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 oauth2_scheme = APIKeyHeader(name="Authorization", auto_error=False)
 
 
@@ -36,7 +46,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @app.get("/")
 def read_root():
-    return FileResponse("index.html")
+    return FileResponse("backend/index.html")
 
 
 @app.post(
