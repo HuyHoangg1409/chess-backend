@@ -7,6 +7,9 @@ function App() {
   const [game, setGame] = useState(new Chess());
   const [message, setMessage] = useState("");
 
+  /**
+   * Gọi API từ backend để lấy ngẫu nhiên 1 câu đố từ database và cập nhật lại trạng thái bàn cờ hiện tại.
+   */
   const fetchRandomPuzzle = () => {
     fetch("http://127.0.0.1:8000/puzzles/randomWithoutDifficulty")
       .then((response) => response.json())
@@ -22,6 +25,12 @@ function App() {
     fetchRandomPuzzle();
   }, []);
 
+  /**
+   * Xử lý logic khi người chơi kéo thả quân cờ trên bàn cờ.
+   *
+   * @param {Object} pieceObject - Đối tượng chứa thông tin quân cờ và nước đi bao gồm "piece", "sourceSquare" và "targetSquare"
+   * @returns {boolean} Trả về true nếu nước đi hợp lệ và false nếu nước đi không hợp lệ
+   */
   const makeAMove = (pieceObject) => {
     try {
       const sourceSquare = pieceObject.sourceSquare;
@@ -54,6 +63,9 @@ function App() {
     }
   };
 
+  /**
+   * Cấu hình các thuộc tính và sự kiện của bàn cờ bao gồm id, position -> thế cờ hiện tại, onPieceDrop -> hàm xử lý khi thả quân cờ
+   */
   const chessBoardOptions = {
     id: "board-01",
     onPieceDrop: (sourceSquare, targetSquare) => {
