@@ -25,6 +25,7 @@ class PuzzleResponse(BaseModel):
     puzzle_id: int
     fen_position: str
     difficulty: str
+    correct_moves: str
 
     class config:
         from_attributes = True
