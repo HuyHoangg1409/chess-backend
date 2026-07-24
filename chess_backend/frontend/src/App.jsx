@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 
+import { getRandomPuzzle } from "./services/api";
+import { correctMovesArray, getTurn, getOppositeTurn } from "./utils/chessHelper";
+
 function App() {
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(new Chess());
@@ -10,15 +13,16 @@ function App() {
   /**
    * Gọi API từ backend để lấy ngẫu nhiên 1 câu đố từ database và cập nhật lại trạng thái bàn cờ hiện tại.
    */
-  const fetchRandomPuzzle = () => {
-    fetch("http://127.0.0.1:8000/puzzles/randomWithoutDifficulty")
-      .then((response) => response.json())
-      .then((data) => {
-        setPuzzle(data);
-        const newGame = new Chess(data.fen_position);
-        setGame(newGame);
-      })
-      .catch((error) => console.error("Error: ", error));
+  const fetchRandomPuzzle = async () => {
+    setMessage("");
+    try {
+      const data = await getRandomPuzzle();
+      setPuzzle(data);
+      setGame(new Chess(data.fen_position));
+    } catch (error) {
+      setMessage("Không thể tải câu đố");
+      throw error;
+    }
   };
 
   useEffect(() => {
@@ -49,7 +53,7 @@ function App() {
       const userMove = `${sourceSquare}${targetSquare}`;
 
       setGame(newGame);
-      const correctMovesArray = puzzle.correct_moves.split(" ");
+      const correctMovesArray = correctMovesArray(puzzle.correct_moves);
       if (userMove == correctMovesArray[0]) {
         setMessage("Nước đi chính xác");
       } else {
@@ -57,9 +61,8 @@ function App() {
       }
       return true;
     } catch (error) {
-      console.log("Lỗi");
-
       return false;
+      throw error;
     }
   };
 
@@ -68,6 +71,7 @@ function App() {
    */
   const chessBoardOptions = {
     id: "board-01",
+    boardOrientation: getOppositeTurn(game.fen()),
     onPieceDrop: (sourceSquare, targetSquare) => {
       const validMove = makeAMove(sourceSquare, targetSquare);
       return validMove;
