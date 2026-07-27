@@ -15,6 +15,7 @@ function App() {
   const [game, setGame] = useState(new Chess());
   const [message, setMessage] = useState("");
   const [moveIndex, setMoveIndex] = useState(0);
+  const [boardOrientation, setBoardOrientation] = useState("white");
 
   /**
    * Gọi API từ backend để lấy ngẫu nhiên 1 câu đố từ database và cập nhật lại trạng thái bàn cờ hiện tại.
@@ -23,8 +24,10 @@ function App() {
     setMessage("");
     try {
       const data = await getRandomPuzzle();
-      
+
       setPuzzle(data);
+
+      setBoardOrientation(getOppositeTurn(data.fen_position));
 
       const newGame = new Chess(data.fen_position);
       setGame(newGame);
@@ -42,19 +45,26 @@ function App() {
     fetchRandomPuzzle();
   }, []);
 
+  /**
+   * Xử lý logic máy tự động đi các nước đi đúng bên phía đối thủ trong chế độ giải đố.
+   * Hàm kiểm tra tiến trình câu đố, lấy nước đi tương ứng từ mảng "movesArray",
+   * cập nhật trạng thái bàn cờ rồi chuyển lượt sang người chơi hoặc hoàn thành câu đố.
+   * @param {Object} currentGame - Đối tượng quản lý trạng thái bàn cờ hiện tại
+   * @param {*} movesArray - Mảng chứa danh sách các nước đi chuẩn theo đáp án của câu đố
+   * @param {*} index - Chỉ mục hiện tại của nước đi mà engine cần thực hiện trong "movesArray"
+   * @returns {void} - Không trả về giá trị
+   */
   const makeEngineMove = (currentGame, movesArray, index) => {
     if (index >= movesArray.length) {
       setMessage("Hoàn thành câu đố");
       return;
     }
-    
 
     setMessage("Computer Turn...");
 
     const engineMoves = getMove(movesArray[index]);
     if (!engineMoves) return;
     console.log(engineMoves);
-    
 
     const newGame = new Chess(currentGame.fen());
     newGame.move({
@@ -93,7 +103,7 @@ function App() {
     try {
       const userMove = `${pieceObject.sourceSquare}${pieceObject.targetSquare}`;
       console.log(userMove);
-      
+
       if (userMove !== movesArray[moveIndex]) {
         setMessage("Đáp án chưa chính xác");
         return false;
@@ -127,7 +137,7 @@ function App() {
    */
   const chessBoardOptions = {
     id: "board-01",
-    // boardOrientation: getOppositeTurn(game.fen()),
+    boardOrientation: boardOrientation,
     onPieceDrop: makeAMove,
     position: game.fen(),
   };
@@ -144,18 +154,43 @@ function App() {
       <div style={{ width: "500px", maxWidth: "100%" }}>
         <Chessboard options={chessBoardOptions} />
       </div>
-      <div style={{ width: '300px', background: '#f8f9fa', padding: '20px', borderRadius: '8px' }}>
-            <h2>Thế cờ #{puzzle.puzzle_id}</h2>
-            <p><strong>Độ khó:</strong> {puzzle.difficulty}</p>
-            
-            <div style={{ padding: '10px', marginTop: '15px', borderRadius: '5px', background: '#e2e3e5', fontWeight: 'bold' }}>
-              {message}
-            </div>
+      <div
+        style={{
+          width: "300px",
+          background: "#f8f9fa",
+          padding: "20px",
+          borderRadius: "8px",
+        }}
+      >
+        <h2>Thế cờ #{puzzle.puzzle_id}</h2>
+        <p>
+          <strong>Độ khó:</strong> {puzzle.difficulty}
+        </p>
 
-            <button onClick={fetchRandomPuzzle} style={{ marginTop: '20px', width: '100%', padding: '10px', cursor: 'pointer' }}>
-              Thế cờ tiếp theo ➡️
-            </button>
-          </div>
+        <div
+          style={{
+            padding: "10px",
+            marginTop: "15px",
+            borderRadius: "5px",
+            background: "#e2e3e5",
+            fontWeight: "bold",
+          }}
+        >
+          {message}
+        </div>
+
+        <button
+          onClick={fetchRandomPuzzle}
+          style={{
+            marginTop: "20px",
+            width: "100%",
+            padding: "10px",
+            cursor: "pointer",
+          }}
+        >
+          Thế cờ tiếp theo ➡️
+        </button>
+      </div>
     </>
   );
 }
