@@ -150,48 +150,28 @@ function App() {
     );
   }
   return (
-    <>
-      <div style={{ width: "500px", maxWidth: "100%" }}>
-        <Chessboard options={chessBoardOptions} />
-      </div>
-      <div
-        style={{
-          width: "300px",
-          background: "#f8f9fa",
-          padding: "20px",
-          borderRadius: "8px",
-        }}
-      >
-        <h2>Thế cờ #{puzzle.puzzle_id}</h2>
-        <p>
-          <strong>Độ khó:</strong> {puzzle.difficulty}
-        </p>
+    <div className="min-h-screen bg-chess-bg text-text-white">
+      <header>
 
-        <div
-          style={{
-            padding: "10px",
-            marginTop: "15px",
-            borderRadius: "5px",
-            background: "#e2e3e5",
-            fontWeight: "bold",
-          }}
-        >
-          {message}
+      </header>
+
+
+      <main>
+        <div className="max-w-2/4">
+          <Chessboard options={chessBoardOptions}/>
         </div>
 
-        <button
-          onClick={fetchRandomPuzzle}
-          style={{
-            marginTop: "20px",
-            width: "100%",
-            padding: "10px",
-            cursor: "pointer",
-          }}
-        >
-          Thế cờ tiếp theo ➡️
-        </button>
-      </div>
-    </>
+        <div>
+          <h2>Puzzles</h2>
+          <button>Next Puzzle</button>
+        </div>
+
+        
+      <footer>
+        
+      </footer>
+      </main>
+    </div>
   );
 }
 
