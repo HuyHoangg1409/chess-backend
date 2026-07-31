@@ -150,27 +150,32 @@ function App() {
     );
   }
   return (
-    <div className="min-h-screen bg-chess-bg text-text-white">
-      <header>
+    <div className="flex flex-col items-center justify-between min-h-screen bg-chess-bg text-text-white p-6">
+      <header className="flex justify-between items-center w-full max-w-5xl py-4 border-b-2 border-white mb-8">
+        <div className="flex items-center">
+          <h2 className="text-4xl text-green-600 font-bold">CHESS</h2>
+        </div>
 
+        <div className="flex items-baseline gap-2.5 ">
+          <span className="text-2xl font-semibold text-red-400">USER</span>
+          <span className="text-green-500">1200 ELO</span>
+        </div>
       </header>
 
-
-      <main>
-        <div className="max-w-2/4">
-          <Chessboard options={chessBoardOptions}/>
+      <main className="flex justify-between w-210">
+        <div className="max-w-2/5">
+          <Chessboard options={chessBoardOptions} />
         </div>
 
         <div>
           <h2>Puzzles</h2>
           <button>Next Puzzle</button>
         </div>
-
-        
-      <footer>
-        
-      </footer>
       </main>
+
+      <footer className="flex">
+        <div>I'm a foot</div>
+      </footer>
     </div>
   );
 }

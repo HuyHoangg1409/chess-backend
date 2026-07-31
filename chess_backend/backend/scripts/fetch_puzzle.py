@@ -1,7 +1,7 @@
 import sys, os
 
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(parent_dir)
+sys.path.append(os.path.dirname(parent_dir))
 csv_path = os.path.join(parent_dir, "data", "puzzles.csv")
 
 import pandas as pd
@@ -21,7 +21,7 @@ def get_difficulty(rating: int):
 def load_puzzles_to_db(file_path):
     df = pd.read_csv(file_path, encoding="utf-8")
 
-    data = df[["FEN", "Moves", "Rating"]].sample(n=200)
+    data = df[["FEN", "Moves", "Rating"]].sample(n=15000)
 
     db = sessionLocal()
     try:
