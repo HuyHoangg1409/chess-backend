@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Chessboard } from "react-chessboard";
+import { Chessboard, defaultDarkSquareStyle } from "react-chessboard";
 import { Chess } from "chess.js";
 
 import { getRandomPuzzle } from "./services/api";
@@ -36,7 +36,7 @@ function App() {
       console.log(movesArray);
       makeEngineMove(newGame, movesArray, 0);
     } catch (error) {
-      setMessage("Không thể tải câu đố");
+      setMessage("Can't Load Puzzle");
       throw error;
     }
   };
@@ -56,7 +56,7 @@ function App() {
    */
   const makeEngineMove = (currentGame, movesArray, index) => {
     if (index >= movesArray.length) {
-      setMessage("Hoàn thành câu đố");
+      setMessage("Puzzle Done");
       return;
     }
 
@@ -78,7 +78,7 @@ function App() {
     setMoveIndex(nextIndex);
 
     if (nextIndex >= movesArray.length) {
-      setMessage("Hoàn thành câu đố");
+      setMessage("Puzzle Done");
     } else {
       setMessage("Player Turn...");
     }
@@ -105,7 +105,7 @@ function App() {
       console.log(userMove);
 
       if (userMove !== movesArray[moveIndex]) {
-        setMessage("Đáp án chưa chính xác");
+        setMessage("Incorrect Answer");
         return false;
       }
 
@@ -121,7 +121,7 @@ function App() {
       setMoveIndex(nextIndex);
 
       if (nextIndex >= movesArray.length) {
-        setMessage("Hoàn thành câu đố");
+        setMessage("Puzzle Done");
       } else {
         makeEngineMove(newGame, movesArray, nextIndex);
       }
@@ -140,6 +140,8 @@ function App() {
     boardOrientation: boardOrientation,
     onPieceDrop: makeAMove,
     position: game.fen(),
+    darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
+    lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
   };
 
   if (!puzzle) {
@@ -151,7 +153,7 @@ function App() {
   }
   return (
     <div className="flex flex-col items-center justify-between min-h-screen bg-chess-bg text-text-white p-6">
-      <header className="flex justify-between items-center w-full max-w-5xl py-4 border-b-2 border-white mb-8">
+      <header className="flex justify-between items-center w-full max-w-7xl py-4 border-b-2 border-white mb-8">
         <div className="flex items-center">
           <h2 className="text-4xl text-green-600 font-bold">CHESS</h2>
         </div>
@@ -162,14 +164,25 @@ function App() {
         </div>
       </header>
 
-      <main className="flex justify-between w-210">
-        <div className="max-w-2/5">
+      <main className="flex justify-between w-full max-w-6xl">
+        <div className="w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
           <Chessboard options={chessBoardOptions} />
         </div>
 
-        <div>
-          <h2>Puzzles</h2>
-          <button>Next Puzzle</button>
+        <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
+          <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
+            <span>Puzzle {puzzle.puzzle_id}</span>
+            <p>Difficulty: {puzzle.difficulty}</p>
+          </div>
+
+          <div className="p-4 mt-4 rounded-lg bg-button-bg-white text-gray-950">
+            <span className="text-xl font-semibold uppercase">{message}</span>
+          </div>
+
+          <div className="flex flex-col gap-4 mt-auto text-xl text-white font-semibold">
+            <button onClick={fetchRandomPuzzle} className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-350 cursor-pointer uppercase">Next Puzzle</button>
+            <button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">Help</button>
+          </div>
         </div>
       </main>
 
