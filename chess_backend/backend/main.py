@@ -149,7 +149,7 @@ def get_my_information(current_user = Depends(get_current_user), db: Session = D
 
     db_user = db.query(models.User).filter(user_id==models.User.user_id).first()
     if not db_user:
-        raise HTTPException(status_code=404, detail="Không tìm thấy người chơi")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi")
 
     return {
         "user_id": db_user.user_id,
@@ -199,6 +199,27 @@ def create_puzzles(
     db.refresh(new_puzzle)
 
     return new_puzzle
+
+
+@app.get("/puzzles/{puzzle_id}", response_model=schemas.PuzzleResponse,status_code=status.HTTP_200_OK)
+def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(database.get_db)):
+    """Lấy câu đố với id chỉ định từ database.
+
+    Args:
+        puzzle_id (int): ID của puzzle cần lấy
+        db (Session): Phiên kết nối cơ sở dữ liệu
+
+    Raises:
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy câu đố với id tương ứng
+
+    Returns:
+        dict: Trả về thông tin của 1 puzzle
+    """
+    puzzle = db.query(models.Puzzles).filter(models.Puzzles.puzzle_id==puzzle_id).first()
+    if not puzzle:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố với id này")
+
+    return puzzle
 
 
 @app.get(
