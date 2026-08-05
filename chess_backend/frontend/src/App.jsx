@@ -12,11 +12,13 @@ import {
 
 function App() {
   const [puzzle, setPuzzle] = useState(null);
-  const [game, setGame] = useState(new Chess());
+  const [game, setGame] = useState(null);
+  const [boardOrientation, setBoardOrientation] = useState("white");
   const [message, setMessage] = useState("");
   const [moveIndex, setMoveIndex] = useState(0);
-  const [boardOrientation, setBoardOrientation] = useState("white");
 
+  const hasFetchedRef = useRef(false);
+  const isFetchingRef = useRef(false);
   const soundsRef = useRef({
     move: new Audio("/move.mp3"),
     capture: new Audio("/capture.mp3"),
@@ -29,28 +31,42 @@ function App() {
    * Gọi API từ backend để lấy ngẫu nhiên 1 câu đố từ database và cập nhật lại trạng thái bàn cờ hiện tại.
    */
   const fetchRandomPuzzle = async () => {
+    if (isFetchingRef.current) {
+      return;
+    }
+    isFetchingRef.current = true;
+
     setMessage("");
+    setMoveIndex(0);
+
     try {
-      const data = await getPuzzleById(20);
-
-      setPuzzle(data);
-
-      setBoardOrientation(getOppositeTurn(data.fen_position));
+      const data = await getRandomPuzzle();
 
       const newGame = new Chess(data.fen_position);
+      const movesArray = correctMovesArray(data.correct_moves);
+      const boardOrientation = getOppositeTurn(data.fen_position);
+
+      setPuzzle(data);
+      setBoardOrientation(boardOrientation);
       setGame(newGame);
 
-      const movesArray = correctMovesArray(data.correct_moves);
-      console.log(movesArray);
-      makeEngineMove(newGame, movesArray, 0);
+      setTimeout(() => {
+        playSound("move");
+        makeEngineMove(newGame, movesArray, 0);
+        isFetchingRef.current = false;
+      }, 600);
     } catch (error) {
-      setMessage("Can't Load Puzzle");
+      setMessage("Can't Load Puzzlee: ", error);
+      isFetchingRef.current = false;
       throw error;
     }
   };
 
   useEffect(() => {
-    fetchRandomPuzzle();
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchRandomPuzzle();
+    }
   }, []);
 
   /**
@@ -60,6 +76,12 @@ function App() {
   const playSound = (soundName) => {
     const sound = soundsRef.current[soundName];
     if (sound) {
+      if(soundName === "decline") {
+        sound.volume = 0.5;
+      }
+      else if (soundName === "move") {
+        sound.volume = 1.0;
+      }
       sound.currentTime = 0;
       sound.play().catch(() => {});
     }
@@ -143,11 +165,9 @@ function App() {
       if (move) {
         if (newGame.inCheck()) {
           playSound("check");
-        }
-        else if (move.captured) {
+        } else if (move.captured) {
           playSound("capture");
-        }
-        else {
+        } else {
           playSound("move");
         }
       }
@@ -175,12 +195,16 @@ function App() {
     id: "board-01",
     boardOrientation: boardOrientation,
     onPieceDrop: makeAMove,
-    position: game.fen(),
+    position: game ? game.fen() : "8/8/8/8/8/8/8/8 w - - 0 1",
+    animationDurationInMs: 300,
     darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
     lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
   };
 
-  if (!puzzle) {
+  if (!puzzle || !game) {
+    console.log(puzzle);
+    console.log(game);
+
     return (
       <div>
         <p>Loading Puzzles</p>
@@ -202,7 +226,7 @@ function App() {
 
       <main className="flex justify-between w-full max-w-6xl">
         <div className="w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
-          <Chessboard options={chessBoardOptions} />
+          <Chessboard key={puzzle.puzzle_id} options={chessBoardOptions} />
         </div>
 
         <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
