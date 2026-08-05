@@ -201,27 +201,6 @@ def create_puzzles(
     return new_puzzle
 
 
-@app.get("/puzzles/{puzzle_id}", response_model=schemas.PuzzleResponse,status_code=status.HTTP_200_OK)
-def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(database.get_db)):
-    """Lấy câu đố với id chỉ định từ database.
-
-    Args:
-        puzzle_id (int): ID của puzzle cần lấy
-        db (Session): Phiên kết nối cơ sở dữ liệu
-
-    Raises:
-        HTTPException: Trả về lỗi 404 nếu không tìm thấy câu đố với id tương ứng
-
-    Returns:
-        dict: Trả về thông tin của 1 puzzle
-    """
-    puzzle = db.query(models.Puzzles).filter(models.Puzzles.puzzle_id==puzzle_id).first()
-    if not puzzle:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố với id này")
-
-    return puzzle
-
-
 @app.get(
     "/puzzles/randomWithDifficulty",
     response_model=schemas.PuzzleResponse,
@@ -366,3 +345,24 @@ def check_puzzle_answer(
             message="Đáp án chưa chính xác",
             correct_solution=correct_move_clean,
         )
+
+
+@app.get("/puzzles/{puzzle_id}", response_model=schemas.PuzzleResponse,status_code=status.HTTP_200_OK)
+def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(database.get_db)):
+    """Lấy câu đố với id chỉ định từ database.
+
+    Args:
+        puzzle_id (int): ID của puzzle cần lấy
+        db (Session): Phiên kết nối cơ sở dữ liệu
+
+    Raises:
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy câu đố với id tương ứng
+
+    Returns:
+        dict: Trả về thông tin của 1 puzzle
+    """
+    puzzle = db.query(models.Puzzles).filter(models.Puzzles.puzzle_id==puzzle_id).first()
+    if not puzzle:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố với id này")
+
+    return puzzle

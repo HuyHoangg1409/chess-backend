@@ -53,6 +53,10 @@ function App() {
     fetchRandomPuzzle();
   }, []);
 
+  /**
+   * Phát sound effect tương ứng với soundName chỉ định và tự động tua lại ban đầu trước khi phát
+   * @param {string} soundName - Tên âm thanh cần phát
+   */
   const playSound = (soundName) => {
     const sound = soundsRef.current[soundName];
     if (sound) {
