@@ -56,11 +56,6 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return user_info
 
 
-@app.get("/")
-def read_root():
-    return FileResponse("backend/index.html")
-
-
 @app.post(
     "/register",
     response_model=schemas.UserResponse,
@@ -133,6 +128,34 @@ def login(user_data: schemas.UserCreate, db: Session = Depends(database.get_db))
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+
+@app.get("/auth/me")
+def get_my_information(current_user = Depends(get_current_user), db: Session = Depends(database.get_db)):
+    """Lấy thông tin của người chơi dùng đang đăng nhập hiện tại dựa vào token.
+
+    Args:
+        current_user (dict): Thông tin của user giải mã từ token bằng hàm get_current_user
+        db (Session): Phiên kết nối cơ sở dữ liệu
+
+    Raises:
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy người chơi trong database
+
+    Returns:
+        dict: Trả về "user_id", "username" và "elo_rating" của người chơi hiện tại
+    """
+    user_id = current_user.get("user_id")
+
+    db_user = db.query(models.User).filter(user_id==models.User.user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người chơi")
+
+    return {
+        "user_id": db_user.user_id,
+        "username": db_user.username,
+        "elo_rating": db_user.elo_rating
+    }
 
 
 @app.post(
