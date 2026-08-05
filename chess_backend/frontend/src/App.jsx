@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Chessboard, defaultDarkSquareStyle } from "react-chessboard";
 import { Chess } from "chess.js";
 
-import { getRandomPuzzle } from "./services/api";
+import { getPuzzleById, getRandomPuzzle } from "./services/api";
 import {
   correctMovesArray,
   getTurn,
@@ -31,7 +31,7 @@ function App() {
   const fetchRandomPuzzle = async () => {
     setMessage("");
     try {
-      const data = await getRandomPuzzle();
+      const data = await getPuzzleById(20);
 
       setPuzzle(data);
 
