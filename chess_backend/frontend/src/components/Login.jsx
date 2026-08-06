@@ -4,9 +4,11 @@ import { sendLoginRequest } from "../services/api";
 function Login({onLoginSuccess}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(false);
     
     try{
         const data = await sendLoginRequest({username, password});
@@ -14,7 +16,8 @@ function Login({onLoginSuccess}) {
         localStorage.setItem("access_token", data.access_token);
         onLoginSuccess(data.access_token);
     } catch (error) {
-        throw error;
+        setError(true);
+        setPassword("");
     }
   }
 
@@ -57,9 +60,11 @@ function Login({onLoginSuccess}) {
             />
           </div>
 
+          {error && <p className="text-red-500 font-semibold text-center">Tài khoản hoặc mật khẩu không chính xác</p>}
+
           <button
             type="submit"
-            className="w-full py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300"
+            className="w-full py-4 mb-auto bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300"
           >
             LOGIN
           </button>
