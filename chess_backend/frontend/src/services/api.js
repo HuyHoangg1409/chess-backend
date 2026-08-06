@@ -17,7 +17,6 @@ export const getRandomPuzzle = async () => {
   }
 };
 
-
 /**
  * Lấy thông tin của 1 puzzle với ID cụ thể từ database.
  * @param {number} puzzleId - ID của puzzle cần lấy
@@ -36,7 +35,6 @@ export const getPuzzleById = async (puzzleId) => {
   }
 };
 
-
 /**
  * Gửi yêu cầu đăng nhập lên server.
  * @param {Object} userData - Thông tin đăng nhập của người dùng bao gồm "username" và "password"
@@ -47,9 +45,9 @@ export const sendLoginRequest = async (userData) => {
     const response = await fetch(`${BASE_URL}/login`, {
       method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
     });
     if (!response.ok) {
       throw new Error("Không đăng nhập được");
@@ -59,4 +57,27 @@ export const sendLoginRequest = async (userData) => {
     console.error("API Error: ", error);
     throw error;
   }
-}
+};
+
+/**
+ * Lấy thông tin của người dùng hiện tại dựa trên access token.
+ * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
+ * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi xác thực người dùng thành công bao gồm "user_id", "username" và "elo_rating"
+ */
+export const getCurrentUser = async (token) => {
+  try {
+    const response = await fetch(`${BASE_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Không thể xác minh người dùng");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("API Error: ", error);
+    throw error;
+  }
+};
