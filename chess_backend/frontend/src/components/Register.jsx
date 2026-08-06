@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { sendRegisterRequest } from "../services/api";
 
-export default function Register() {
+export default function Register({switchToLogin}) {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -31,6 +31,7 @@ export default function Register() {
         password: formData.password,
       });
       alert("Đăng ký thành công");
+      switchToLogin();
     } catch (error) {
       setError("Tên tài khoản đã tồn tại");
     }
@@ -110,10 +111,17 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full py-4 mb-auto text-xl font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
+            className="w-full py-4 mt-4 text-xl font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
           >
             ĐĂNG KÝ
           </button>
+
+          <p className="flex gap-4 justify-center text-center">
+            Đã có tài khoản?
+            <button type="button" onClick={switchToLogin} className="text-green-400 hover:text-green-500 cursor-pointer font-semibold">
+              Đăng nhập ngay
+            </button>
+          </p>
         </form>
       </div>
     </div>

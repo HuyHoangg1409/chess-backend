@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import PuzzleGame from "./components/PuzzleGame";
 import Register from "./components/Register";
+import Auth from "./components/Auth";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token"));
@@ -42,12 +43,12 @@ function App() {
 
   if (!localStorage.getItem("access_token")) {
     return (
-      // <Login
-      //   onLoginSuccess={(newToken) => {
-      //     setToken(newToken);
-      //   }}
-      // />
-      <Register/>
+      <Auth
+        onLoginSuccess={(newToken) => {
+          localStorage.setItem("access_token", newToken);
+          setToken(newToken);
+        }}
+      />
     );
   }
 

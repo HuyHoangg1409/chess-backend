@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { sendLoginRequest } from "../services/api";
 
-function Login({onLoginSuccess}) {
+function Login({onLoginSuccess, switchToRegister}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
@@ -68,6 +68,13 @@ function Login({onLoginSuccess}) {
           >
             ĐĂNG NHẬP
           </button>
+
+          <p className="flex gap-4 justify-center text-center">
+            Chưa có tài khoản?
+            <button type="button" onClick={switchToRegister} className="text-green-400 hover:text-green-500 cursor-pointer font-semibold">
+              Đăng ký ngay
+            </button>
+          </p>
         </form>
       </div>
     </div>
