@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { sendRegisterRequest } from "../services/api";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -6,7 +7,7 @@ export default function Register() {
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -14,11 +15,25 @@ export default function Register() {
       ...prevData,
       [name]: value,
     }));
-};
+  };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log(formData);
+    if (formData.password != formData.confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    try {
+      const data = await sendRegisterRequest({
+        username: formData.username,
+        password: formData.password,
+      });
+      alert("Đăng ký thành công");
+    } catch (error) {
+      setError("Tên tài khoản đã tồn tại");
+    }
   };
 
   return (
@@ -90,16 +105,14 @@ const handleSubmit = async (e) => {
           </div>
 
           {error && (
-            <p className="text-red-500 font-semibold text-center">
-              Tài khoản hoặc mật khẩu không chính xác
-            </p>
+            <p className="text-red-500 font-semibold text-center">{error}</p>
           )}
 
           <button
             type="submit"
-            className="w-full py-4 mb-auto text-xl font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300"
+            className="w-full py-4 mb-auto text-xl font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
           >
-            REGISTER
+            ĐĂNG KÝ
           </button>
         </form>
       </div>

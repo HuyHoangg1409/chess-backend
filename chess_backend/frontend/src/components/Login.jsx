@@ -64,9 +64,9 @@ function Login({onLoginSuccess}) {
 
           <button
             type="submit"
-            className="w-full py-4 mb-auto text-xl bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300"
+            className="w-full py-4 mb-auto text-xl bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
           >
-            LOGIN
+            ĐĂNG NHẬP
           </button>
         </form>
       </div>
