@@ -81,3 +81,29 @@ export const getCurrentUser = async (token) => {
     throw error;
   }
 };
+
+/**
+ * Gửi đáp án của người chơi lên server để kiểm tra.
+ * @param {int} puzzle_id - ID của câu đố cần kiểm tra
+ * @param {string} userAnswer - Các nước đi người chơi đã đi
+ * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
+ * @returns
+ */
+export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
+  try {
+    const response = await fetch(`${BASE_URL}/puzzles/check`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ puzzle_id: puzzle_id, userMover: userAnswer }),
+    });
+    if (!response.ok) {
+      throw new Error("Không kết nối được api /puzzles/check");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("API Error: ", error);
+    throw error;
+  }
+};
