@@ -59,6 +59,8 @@ export const sendLoginRequest = async (userData) => {
   }
 };
 
+// export const sendRegisterRequest = async 
+
 /**
  * Lấy thông tin của người dùng hiện tại dựa trên access token.
  * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
