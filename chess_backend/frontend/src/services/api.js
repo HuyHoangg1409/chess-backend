@@ -35,3 +35,28 @@ export const getPuzzleById = async (puzzleId) => {
     throw error;
   }
 };
+
+
+/**
+ * Gửi yêu cầu đăng nhập lên server.
+ * @param {Object} userData - Thông tin đăng nhập của người dùng bao gồm "username" và "password"
+ * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi đăng nhập thành công bao gồm "access_token" và "token_type"
+ */
+export const sendLoginRequest = async (userData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/login`, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    });
+    if (!response.ok) {
+      throw new Error("Không đăng nhập được");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("API Error: ", error);
+    throw error;
+  }
+}
