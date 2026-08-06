@@ -59,7 +59,29 @@ export const sendLoginRequest = async (userData) => {
   }
 };
 
-// export const sendRegisterRequest = async 
+/**
+ * Gửi yêu cầu đăng ký người dùng mới lên server với thông tin từ userData.
+ * @param {Object} userData - Thông tin đăng ký của người dùng bao gồm "username" và "password"
+ * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi đăng ký thành công bao gồm "user_id", "username" và "elo_rating"
+ */
+export const sendRegisterRequest = async (userData) => {
+  try {
+    const response = await fetch(`${BASE_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) {
+      throw new Error("Lỗi khi đăng ký tài khoản");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("API Error: ", error);
+    throw error;
+  }
+};
 
 /**
  * Lấy thông tin của người dùng hiện tại dựa trên access token.
