@@ -9,6 +9,7 @@ import {
   getOppositeTurn,
   getMove,
 } from "./utils/chessHelper";
+import Login from "./components/Login";
 
 function App() {
   const [puzzle, setPuzzle] = useState(null);
@@ -16,6 +17,8 @@ function App() {
   const [boardOrientation, setBoardOrientation] = useState("white");
   const [message, setMessage] = useState("");
   const [moveIndex, setMoveIndex] = useState(0);
+
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
@@ -76,10 +79,9 @@ function App() {
   const playSound = (soundName) => {
     const sound = soundsRef.current[soundName];
     if (sound) {
-      if(soundName === "decline") {
+      if (soundName === "decline") {
         sound.volume = 0.5;
-      }
-      else if (soundName === "move") {
+      } else if (soundName === "move") {
         sound.volume = 1.0;
       }
       sound.currentTime = 0;
@@ -200,6 +202,21 @@ function App() {
     darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
     lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setToken(inull);
+  };
+
+  if (!token) {
+    return (
+      <Login
+        onLoginSuccess={(newToken) => {
+          setToken(newToken);
+        }}
+      />
+    );
+  }
 
   if (!puzzle || !game) {
     console.log(puzzle);
