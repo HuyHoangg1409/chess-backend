@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Chessboard, defaultDarkSquareStyle } from "react-chessboard";
 import { Chess } from "chess.js";
 
-import { getPuzzleById, getRandomPuzzle } from "./services/api";
+import { getCurrentUser, getPuzzleById, getRandomPuzzle } from "./services/api";
 import {
   correctMovesArray,
   getTurn,
@@ -19,8 +19,8 @@ function App() {
   const [moveIndex, setMoveIndex] = useState(0);
 
   const [token, setToken] = useState(localStorage.getItem("token"));
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const hasFetchedRef = useRef(false);
   const isFetchingRef = useRef(false);
   const soundsRef = useRef({
     move: new Audio("/move.mp3"),
@@ -66,11 +66,23 @@ function App() {
   };
 
   useEffect(() => {
-    if (!hasFetchedRef.current) {
-      hasFetchedRef.current = true;
-      fetchRandomPuzzle();
-    }
-  }, []);
+    const fetchUserData = async () => {
+      const localToken = localStorage.getItem("access_token");
+      if (!localToken) return;
+
+      try {
+        const userData = await getCurrentUser(localToken);
+        setCurrentUser(userData);
+        await fetchRandomPuzzle();
+      } catch (error) {
+        console.error("Token hết hạn hoặc bị lỗi: ", error);
+        localStorage.removeItem("access_token");
+        setToken(null);
+      }
+    };
+
+    fetchUserData();
+  }, [token]);
 
   /**
    * Phát sound effect tương ứng với soundName chỉ định và tự động tua lại ban đầu trước khi phát
@@ -126,7 +138,7 @@ function App() {
       playSound("correct");
       setMessage("Puzzle Done");
     } else {
-      setMessage("Player Turn...");
+      setMessage(`${currentUser.username} Turn...`);
     }
   };
 
@@ -207,8 +219,9 @@ function App() {
     localStorage.removeItem("token");
     setToken(inull);
   };
+  console.log("currentUser: ", currentUser);
 
-  if (!token) {
+  if (!localStorage.getItem("access_token")) {
     return (
       <Login
         onLoginSuccess={(newToken) => {
@@ -219,9 +232,6 @@ function App() {
   }
 
   if (!puzzle || !game) {
-    console.log(puzzle);
-    console.log(game);
-
     return (
       <div>
         <p>Loading Puzzles</p>
@@ -236,8 +246,10 @@ function App() {
         </div>
 
         <div className="flex items-baseline gap-2.5 ">
-          <span className="text-2xl font-semibold text-red-400">USER</span>
-          <span className="text-green-500">1200 ELO</span>
+          <span className="text-2xl font-semibold text-red-400">
+            {currentUser.username}
+          </span>
+          <span className="text-green-500">{currentUser.elo_rating} ELO</span>
         </div>
       </header>
 
