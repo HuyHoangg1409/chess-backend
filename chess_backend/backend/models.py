@@ -20,10 +20,13 @@ class User(Base):
 class Puzzles(Base):
     __tablename__ = "puzzles"
 
-    puzzle_id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    puzzle_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, index=True
+    )
     fen_position: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     correct_moves: Mapped[str] = mapped_column(Text, nullable=False)
     difficulty: Mapped[str] = mapped_column(String, nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=True)
 
 
 class UserPuzzleHistory(Base):
