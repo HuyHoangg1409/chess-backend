@@ -56,6 +56,29 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return user_info
 
 
+def calculate_new_elo(
+    user_elo: int, puzzle_elo: int, is_correct: bool, k_factor: int = 32
+) -> tuple[int, int]:
+    """Tính elo mới cho người chơi dựa trên elo của câu đố
+
+    Args:
+        user_elo (int): elo của người chơi
+        puzzle_elo (int): elo của câu đố
+        is_correct (bool): Kiểm tra người chơi giải đúng hay sai
+        k_factor (int): Hệ số biến động, mặc định để là 32
+
+    Returns:
+        tuple[int, int]: Trả về 1 tuple bao gồm "new_elo" và "elo_change"
+    """
+    expected_score = 1 / (1 + 10 ** ((puzzle_elo - user_elo) / 400))
+    actual_score = 1.0 if is_correct else 0.0
+
+    elo_change = round(k_factor * (actual_score - expected_score))
+
+    new_elo = max(0, user_elo + elo_change)
+    return new_elo, elo_change
+
+
 @app.post(
     "/register",
     response_model=schemas.UserResponse,
@@ -130,9 +153,10 @@ def login(user_data: schemas.UserCreate, db: Session = Depends(database.get_db))
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-
 @app.get("/auth/me")
-def get_my_information(current_user = Depends(get_current_user), db: Session = Depends(database.get_db)):
+def get_my_information(
+    current_user=Depends(get_current_user), db: Session = Depends(database.get_db)
+):
     """Lấy thông tin của người chơi dùng đang đăng nhập hiện tại dựa vào token.
 
     Args:
@@ -147,14 +171,16 @@ def get_my_information(current_user = Depends(get_current_user), db: Session = D
     """
     user_id = current_user.get("user_id")
 
-    db_user = db.query(models.User).filter(user_id==models.User.user_id).first()
+    db_user = db.query(models.User).filter(user_id == models.User.user_id).first()
     if not db_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
+        )
 
     return {
         "user_id": db_user.user_id,
         "username": db_user.username,
-        "elo_rating": db_user.elo_rating
+        "elo_rating": db_user.elo_rating,
     }
 
 
@@ -347,7 +373,11 @@ def check_puzzle_answer(
         )
 
 
-@app.get("/puzzles/{puzzle_id}", response_model=schemas.PuzzleResponse,status_code=status.HTTP_200_OK)
+@app.get(
+    "/puzzles/{puzzle_id}",
+    response_model=schemas.PuzzleResponse,
+    status_code=status.HTTP_200_OK,
+)
 def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(database.get_db)):
     """Lấy câu đố với id chỉ định từ database.
 
@@ -361,8 +391,13 @@ def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(database.get_db)):
     Returns:
         dict: Trả về thông tin của 1 puzzle
     """
-    puzzle = db.query(models.Puzzles).filter(models.Puzzles.puzzle_id==puzzle_id).first()
+    puzzle = (
+        db.query(models.Puzzles).filter(models.Puzzles.puzzle_id == puzzle_id).first()
+    )
     if not puzzle:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố với id này")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy câu đố với id này",
+        )
 
     return puzzle
