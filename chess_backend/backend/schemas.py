@@ -38,5 +38,6 @@ class PuzzleSubmit(BaseModel):
 
 class PuzzleResultResponse(BaseModel):
     is_correct: bool
+    is_completed: bool
+    elo_changed: int
     message: str
-    correct_solution: str
