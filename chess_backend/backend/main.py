@@ -313,7 +313,7 @@ def check_puzzle_answer(
         HTTPException: Trả về lỗi 404 nếu không tìm thấy câu đố
 
     Returns:
-        dict: Trả về kết quả từ database bao gồm "is_correct", "message" và "correct_solution"
+        dict: Trả về kết quả từ database bao gồm "is_correct", "is_completed" và "message"
     """
     print(f"{current_user.get("sub")}, {current_user.get("user_id")}")
     db_user = (
@@ -336,41 +336,52 @@ def check_puzzle_answer(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
         )
 
-    user_move_clean = submission.user_move.strip().lower()
-    correct_move_clean = puzzle.correct_moves.strip().lower()
+    user_list = submission.user_move.strip().lower().split(" ")
+    correct_list = puzzle.correct_moves.strip().lower().split(" ")
 
-    if user_move_clean == correct_move_clean:
-        if puzzle.difficulty == "Easy":
-            db_user.elo_rating += 15
-        elif puzzle.difficulty == "Medium":
-            db_user.elo_rating += 20
-        elif puzzle.difficulty == "Hard":
-            db_user.elo_rating += 25
-
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-
-        return schemas.PuzzleResultResponse(
-            is_correct=True, message="Đáp án đúng", correct_solution=correct_move_clean
-        )
-    else:
-        if puzzle.difficulty == "Easy":
-            db_user.elo_rating -= 10
-        elif puzzle.difficulty == "Medium":
-            db_user.elo_rating -= 15
-        elif puzzle.difficulty == "Hard":
-            db_user.elo_rating -= 20
-
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-
+    if len(user_list) > len(correct_list):
         return schemas.PuzzleResultResponse(
             is_correct=False,
-            message="Đáp án chưa chính xác",
-            correct_solution=correct_move_clean,
+            is_completed=False,
+            elo_changed=10,
+            message="Đi quá nước cần thiết",
         )
+
+    result = True
+
+    for i in range(len(user_list)):
+        if user_list[i] != correct_list[i]:
+            result = False
+
+    new_elo, elo_change = calculate_new_elo(db_user.elo_rating, puzzle.rating, result)
+    db_user.elo_rating = new_elo
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    if len(user_list) == len(correct_list) and result:
+
+        return schemas.PuzzleResultResponse(
+            is_correct=True,
+            is_completed=True,
+            elo_changed=elo_change,
+            message="Đáp án đúng",
+        )
+    else:
+        if result:
+            return schemas.PuzzleResultResponse(
+                is_correct=True,
+                is_completed=False,
+                elo_changed=elo_change,
+                message="Đáp án đúng",
+            )
+        else:
+            return schemas.PuzzleResultResponse(
+                is_correct=False,
+                is_completed=True,
+                elo_changed=elo_change,
+                message="Đáp án chưa chính xác",
+            )
 
 
 @app.get(
