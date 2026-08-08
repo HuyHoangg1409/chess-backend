@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Chessboard, defaultDarkSquareStyle } from "react-chessboard";
 import { Chess } from "chess.js";
-import { getPuzzleById, getRandomPuzzle } from "../services/api";
+import { checkPuzzle, getPuzzleById, getRandomPuzzle } from "../services/api";
 import {
   correctMovesArray,
   getTurn,
@@ -15,6 +15,9 @@ export default function PuzzleGame() {
   const [boardOrientation, setBoardOrientation] = useState("white");
   const [message, setMessage] = useState("");
   const [moveIndex, setMoveIndex] = useState(0);
+  const [isFailed, setIsFailed] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [moveHistory, setMoveHistory] = useState([]);
 
   const isFetchingRef = useRef(false);
   const soundsRef = useRef({
@@ -53,9 +56,14 @@ export default function PuzzleGame() {
 
     setMessage("");
     setMoveIndex(0);
+    setMoveHistory([]);
+    setIsCompleted(false);
+    setIsFailed(false);
 
     try {
-      const data = await getRandomPuzzle();
+      // const data = await getPuzzleById(738933);
+      const data = await getPuzzleById(241361);
+      // const data = await getRandomPuzzle();
 
       const newGame = new Chess(data.fen_position);
       const movesArray = correctMovesArray(data.correct_moves);
@@ -129,6 +137,27 @@ export default function PuzzleGame() {
    * @returns {boolean} Trả về true nếu nước đi hợp lệ và false nếu nước đi không hợp lệ
    */
   const makeAMove = (pieceObject) => {
+    if (isFailed || isCompleted) return false;
+
+    const newGame = new Chess(game.fen());
+    let move = null;
+    try {
+      move = newGame.move({
+        from: pieceObject.sourceSquare,
+        to: pieceObject.targetSquare,
+        // promotion: 'q',
+      });
+    } catch (e) {
+      playSound("decline");
+      return false;
+    }
+
+    if (!move) return false;
+    setGame(newGame);
+
+    const userMove = `${pieceObject.sourceSquare}${pieceObject.targetSquare}`;
+    const newHistory = [...moveHistory, userMove];
+
     if (moveIndex % 2 === 0) {
       return false;
     }
@@ -138,47 +167,52 @@ export default function PuzzleGame() {
 
     if (moveIndex >= movesArray.length) return false;
 
-    try {
-      const userMove = `${pieceObject.sourceSquare}${pieceObject.targetSquare}`;
-
-      if (userMove !== movesArray[moveIndex]) {
-        playSound("decline");
-        setMessage("Incorrect Answer");
-        return false;
-      }
-
-      const newGame = new Chess(game.fen());
-      const move = newGame.move({
-        from: pieceObject.sourceSquare,
-        to: pieceObject.targetSquare,
-        promotion: "q",
-      });
-      setGame(newGame);
-
-      if (move) {
-        if (newGame.inCheck()) {
-          playSound("check");
-        } else if (move.captured) {
-          playSound("capture");
-        } else {
-          playSound("move");
+    checkPuzzle(
+      puzzle.puzzle_id,
+      newHistory.join(" "),
+      localStorage.getItem("access_token"),
+    )
+      .then((response) => {
+        if (!response.is_correct) {
+          playSound("decline");
+          setIsFailed(true);
+          setMessage("Incorrect Answer");
+          console.log(
+            "Đáp án chưa chính xác, trừ ",
+            response.elo_changed,
+            " elo",
+          );
+          newGame.undo();
+          setGame(new Chess(newGame.fen()));
+          return false;
         }
-      }
 
-      const nextIndex = moveIndex + 1;
-      setMoveIndex(nextIndex);
+        setMoveHistory(newHistory);
 
-      if (nextIndex >= movesArray.length) {
-        playSound("correct");
-        setMessage("Puzzle Done");
-      } else {
-        makeEngineMove(newGame, movesArray, nextIndex);
-      }
-      return true;
-    } catch (error) {
-      return false;
-      throw error;
-    }
+        if (move) {
+          if (newGame.inCheck()) {
+            playSound("check");
+          } else if (move.captured) {
+            playSound("capture");
+          } else {
+            playSound("move");
+          }
+        }
+
+        const nextIndex = moveIndex + 1;
+        setMoveIndex(nextIndex);
+
+        if (nextIndex >= movesArray.length) {
+          playSound("correct");
+          setMessage("Puzzle Done");
+        } else {
+          makeEngineMove(newGame, movesArray, nextIndex);
+        }
+        return true;
+      })
+      .catch((error) => {
+        console.error("Lỗi kết nối API: ", error);
+      });
   };
 
   if (!puzzle || !game) {
@@ -196,6 +230,7 @@ export default function PuzzleGame() {
     id: "board-01",
     boardOrientation: boardOrientation,
     onPieceDrop: makeAMove,
+    allowDragging: !isFailed,
     position: game ? game.fen() : "8/8/8/8/8/8/8/8 w - - 0 1",
     animationDurationInMs: 300,
     darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
