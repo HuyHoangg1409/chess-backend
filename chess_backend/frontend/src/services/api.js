@@ -93,6 +93,7 @@ export const getCurrentUser = async (token) => {
     const response = await fetch(`${BASE_URL}/auth/me`, {
       method: "GET",
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
@@ -111,16 +112,17 @@ export const getCurrentUser = async (token) => {
  * @param {int} puzzle_id - ID của câu đố cần kiểm tra
  * @param {string} userAnswer - Các nước đi người chơi đã đi
  * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
- * @returns
+ * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "is_correct", "is_completed" và "message"
  */
 export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
   try {
     const response = await fetch(`${BASE_URL}/puzzles/check`, {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ puzzle_id: puzzle_id, userMover: userAnswer }),
+      body: JSON.stringify({ puzzle_id: puzzle_id, user_move: userAnswer }),
     });
     if (!response.ok) {
       throw new Error("Không kết nối được api /puzzles/check");

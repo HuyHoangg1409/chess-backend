@@ -102,6 +102,7 @@ export default function PuzzleGame() {
     if (index >= movesArray.length) {
       playSound("correct");
       setMessage("Puzzle Done");
+      console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
       return;
     }
 
@@ -119,12 +120,15 @@ export default function PuzzleGame() {
     });
     setGame(newGame);
 
+    setMoveHistory((prev) => [...prev, movesArray[index]]);
+
     const nextIndex = index + 1;
     setMoveIndex(nextIndex);
 
     if (nextIndex >= movesArray.length) {
       playSound("correct");
       setMessage("Puzzle Done");
+      console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
     } else {
       setMessage("Player Turn...");
     }
@@ -167,6 +171,8 @@ export default function PuzzleGame() {
 
     if (moveIndex >= movesArray.length) return false;
 
+    console.log(newHistory.join(" "));
+
     checkPuzzle(
       puzzle.puzzle_id,
       newHistory.join(" "),
@@ -205,6 +211,7 @@ export default function PuzzleGame() {
         if (nextIndex >= movesArray.length) {
           playSound("correct");
           setMessage("Puzzle Done");
+          console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
         } else {
           makeEngineMove(newGame, movesArray, nextIndex);
         }
@@ -260,9 +267,12 @@ export default function PuzzleGame() {
           >
             Next Puzzle
           </button>
-          <button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
+          {!isFailed&&(<button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
             Help
-          </button>
+          </button>)}
+          {isFailed&&(<button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
+            View solution
+          </button>)}
         </div>
       </div>
     </main>
