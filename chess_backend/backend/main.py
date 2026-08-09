@@ -354,12 +354,13 @@ def check_puzzle_answer(
             result = False
 
     new_elo, elo_change = calculate_new_elo(db_user.elo_rating, puzzle.rating, result)
-    db_user.elo_rating = new_elo
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    print(f"{new_elo}, {elo_change}")
 
     if len(user_list) == len(correct_list) and result:
+        db_user.elo_rating = new_elo
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
 
         return schemas.PuzzleResultResponse(
             is_correct=True,
@@ -376,6 +377,11 @@ def check_puzzle_answer(
                 message="Đáp án đúng",
             )
         else:
+            db_user.elo_rating = new_elo
+            db.add(db_user)
+            db.commit()
+            db.refresh(db_user)
+
             return schemas.PuzzleResultResponse(
                 is_correct=False,
                 is_completed=True,
