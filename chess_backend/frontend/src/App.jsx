@@ -41,6 +41,13 @@ function App() {
     setCurrentUser(null);
   };
 
+  const handleUpdateElo = (elo_changed) => {
+    setCurrentUser((prev) => ({
+      ...prev,
+      elo_rating: Math.max(prev.elo_rating + elo_changed, 0),
+    }));
+  };
+
   if (!localStorage.getItem("access_token")) {
     return (
       <Auth
@@ -64,7 +71,7 @@ function App() {
     <div className="flex flex-col items-center justify-between min-h-screen bg-chess-bg text-text-white p-6">
       <Header currentUser={currentUser} onLogout={handleLogout} />
 
-      <PuzzleGame />
+      <PuzzleGame onUpdateElo={handleUpdateElo} />
 
       <Footer />
     </div>

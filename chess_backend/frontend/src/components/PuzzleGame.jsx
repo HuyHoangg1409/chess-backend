@@ -9,7 +9,7 @@ import {
   getMove,
 } from "../utils/chessHelper";
 
-export default function PuzzleGame() {
+export default function PuzzleGame({ onUpdateElo }) {
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(null);
   const [boardOrientation, setBoardOrientation] = useState("white");
@@ -103,6 +103,7 @@ export default function PuzzleGame() {
       playSound("correct");
       setMessage("Puzzle Done");
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
+      onUpdateElo(response.elo_changed);
       return;
     }
 
@@ -113,12 +114,20 @@ export default function PuzzleGame() {
     console.log(engineMoves);
 
     const newGame = new Chess(currentGame.fen());
-    newGame.move({
+    const move = newGame.move({
       from: engineMoves.from,
       to: engineMoves.to,
       promotion: "q",
     });
     setGame(newGame);
+
+    if (move) {
+      if (move.captured) {
+        playSound("capture");
+      } else {
+        playSound("move");
+      }
+    }
 
     setMoveHistory((prev) => [...prev, movesArray[index]]);
 
@@ -129,6 +138,7 @@ export default function PuzzleGame() {
       playSound("correct");
       setMessage("Puzzle Done");
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
+      onUpdateElo(response.elo_changed);
     } else {
       setMessage("Player Turn...");
     }
@@ -146,6 +156,7 @@ export default function PuzzleGame() {
     const newGame = new Chess(game.fen());
     let move = null;
     try {
+      playSound("move");
       move = newGame.move({
         from: pieceObject.sourceSquare,
         to: pieceObject.targetSquare,
@@ -181,8 +192,9 @@ export default function PuzzleGame() {
       .then((response) => {
         if (!response.is_correct) {
           playSound("decline");
-          setIsFailed(true);
           setMessage("Incorrect Answer");
+
+          setIsFailed(true);
           console.log(
             "Đáp án chưa chính xác, trừ ",
             response.elo_changed,
@@ -190,6 +202,9 @@ export default function PuzzleGame() {
           );
           newGame.undo();
           setGame(new Chess(newGame.fen()));
+
+          onUpdateElo(response.elo_changed);
+
           return false;
         }
 
@@ -212,6 +227,7 @@ export default function PuzzleGame() {
           playSound("correct");
           setMessage("Puzzle Done");
           console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
+          onUpdateElo(response.elo_changed);
         } else {
           makeEngineMove(newGame, movesArray, nextIndex);
         }
@@ -267,12 +283,16 @@ export default function PuzzleGame() {
           >
             Next Puzzle
           </button>
-          {!isFailed&&(<button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
-            Help
-          </button>)}
-          {isFailed&&(<button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
-            View solution
-          </button>)}
+          {!isFailed && (
+            <button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
+              Help
+            </button>
+          )}
+          {isFailed && (
+            <button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
+              View solution
+            </button>
+          )}
         </div>
       </div>
     </main>
