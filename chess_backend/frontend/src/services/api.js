@@ -133,3 +133,30 @@ export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
     throw error;
   }
 };
+
+/**
+ * Gửi request đến api /puzzles/help để lấy nước đi chính xác tại moveIndex.
+ * @param {int} puzzle_id - ID của câu đố cần lấy đáp án
+ * @param {int} moveIndex - Index của đáp án cần lấy
+ * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
+ * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "hint" là nước đi chính xác tại moveIndex
+ */
+export const getHelp = async (puzzle_id, moveIndex, token) => {
+  try {
+    const response = await fetch(`${BASE_URL}/puzzles/help`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ puzzle_id: puzzle_id, move_index: moveIndex }),
+    });
+    if (!response.ok) {
+      throw new Error("Không kết nối được api /puzzles/help");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("API Error: ", error);
+    throw error;
+  }
+};
