@@ -8,6 +8,7 @@ import {
   getOppositeTurn,
   getMove,
 } from "../utils/chessHelper";
+import PromotionDialog from "./PromotionDialog";
 
 export default function PuzzleGame({ onUpdateElo }) {
   const [puzzle, setPuzzle] = useState(null);
@@ -18,14 +19,16 @@ export default function PuzzleGame({ onUpdateElo }) {
   const [isFailed, setIsFailed] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [moveHistory, setMoveHistory] = useState([]);
+  const [boardAnimationDuration, setBoardAnimationDuration] = useState(200);
+  const [promotionData, setPromotionData] = useState(null);
 
   const isFetchingRef = useRef(false);
   const soundsRef = useRef({
-    move: new Audio("/move.mp3"),
-    capture: new Audio("/capture.mp3"),
-    check: new Audio("/move-check.mp3"),
-    correct: new Audio("/correct.mp3"),
-    decline: new Audio("/decline.mp3"),
+    move: new Audio("/audio/move.mp3"),
+    capture: new Audio("/audio/capture.mp3"),
+    check: new Audio("/audio/move-check.mp3"),
+    correct: new Audio("/audio/correct.mp3"),
+    decline: new Audio("/audio/decline.mp3"),
   });
 
   /**
@@ -61,8 +64,8 @@ export default function PuzzleGame({ onUpdateElo }) {
     setIsFailed(false);
 
     try {
-      // const data = await getPuzzleById(738933);
-      const data = await getPuzzleById(241361);
+      const data = await getPuzzleById(738933);
+      // const data = await getPuzzleById(241361);
       // const data = await getRandomPuzzle();
 
       const newGame = new Chess(data.fen_position);
@@ -99,9 +102,11 @@ export default function PuzzleGame({ onUpdateElo }) {
    * @returns {void} - Không trả về giá trị
    */
   const makeEngineMove = (currentGame, movesArray, index) => {
+    setBoardAnimationDuration(200);
+
     if (index >= movesArray.length) {
       playSound("correct");
-      setMessage("Puzzle Done");
+      setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
       onUpdateElo(response.elo_changed);
       return;
@@ -136,7 +141,7 @@ export default function PuzzleGame({ onUpdateElo }) {
 
     if (nextIndex >= movesArray.length) {
       playSound("correct");
-      setMessage("Puzzle Done");
+      setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
       onUpdateElo(response.elo_changed);
     } else {
@@ -150,9 +155,28 @@ export default function PuzzleGame({ onUpdateElo }) {
    * @param {Object} pieceObject - Đối tượng chứa thông tin quân cờ và nước đi bao gồm "piece", "sourceSquare" và "targetSquare"
    * @returns {boolean} Trả về true nếu nước đi hợp lệ và false nếu nước đi không hợp lệ
    */
-  const makeAMove = (pieceObject) => {
+  const makeAMove = (pieceObject, selectedPromotion = null) => {
     if (isFailed || isCompleted) return false;
 
+    setBoardAnimationDuration(0);
+
+    const isPromotion = handlePromotionCheck(
+      pieceObject.sourceSquare,
+      pieceObject.targetSquare,
+      pieceObject.piece.pieceType,
+    );
+    console.log("p", isPromotion);
+
+    if (isPromotion && !selectedPromotion) {
+      setPromotionData({
+        sourceSquare: pieceObject.sourceSquare,
+        targetSquare: pieceObject.targetSquare,
+        pieceObject: pieceObject,
+      });
+      return false;
+    }
+
+    const promotionPiece = selectedPromotion || "q";
     const newGame = new Chess(game.fen());
     let move = null;
     try {
@@ -160,17 +184,20 @@ export default function PuzzleGame({ onUpdateElo }) {
       move = newGame.move({
         from: pieceObject.sourceSquare,
         to: pieceObject.targetSquare,
-        // promotion: 'q',
+        promotion: promotionPiece,
       });
     } catch (e) {
       playSound("decline");
+      console.error(e);
+
       return false;
     }
 
     if (!move) return false;
     setGame(newGame);
 
-    const userMove = `${pieceObject.sourceSquare}${pieceObject.targetSquare}`;
+    const promotionChar = move.promotion ? move.promotion : "";
+    const userMove = `${pieceObject.sourceSquare}${pieceObject.targetSquare}${promotionChar}`;
     const newHistory = [...moveHistory, userMove];
 
     if (moveIndex % 2 === 0) {
@@ -192,7 +219,7 @@ export default function PuzzleGame({ onUpdateElo }) {
       .then((response) => {
         if (!response.is_correct) {
           playSound("decline");
-          setMessage("Incorrect Answer");
+          setMessage(`Incorrect Answer (${response.elo_changed} ELO)`);
 
           setIsFailed(true);
           console.log(
@@ -201,6 +228,7 @@ export default function PuzzleGame({ onUpdateElo }) {
             " elo",
           );
           newGame.undo();
+          setBoardAnimationDuration(200);
           setGame(new Chess(newGame.fen()));
 
           onUpdateElo(response.elo_changed);
@@ -225,7 +253,7 @@ export default function PuzzleGame({ onUpdateElo }) {
 
         if (nextIndex >= movesArray.length) {
           playSound("correct");
-          setMessage("Puzzle Done");
+          setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
           console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
           onUpdateElo(response.elo_changed);
         } else {
@@ -238,6 +266,45 @@ export default function PuzzleGame({ onUpdateElo }) {
       });
   };
 
+  const handlePromotionCheck = (sourceSquare, targetSquare, piece) => {
+    // console.log(piece);
+
+    const isPawn = piece.toUpperCase().endsWith("P");
+    // console.log(isPawn);
+
+    const isWhitePromotion = isPawn && targetSquare[1] == "8";
+    const isBlackPromotion = isPawn && targetSquare[1] == "1";
+
+    return isWhitePromotion || isBlackPromotion;
+  };
+
+  const handlePromotionPieceSelect = (promotionPiece) => {
+    if (!promotionData) return;
+
+    const { pieceObject } = promotionData;
+    setPromotionData(null);
+
+    makeAMove(pieceObject, promotionPiece);
+  };
+
+  /**
+   * Cấu hình các thuộc tính và sự kiện của bàn cờ bao gồm id, position -> thế cờ hiện tại, onPieceDrop -> hàm xử lý khi thả quân cờ
+   */
+  const chessBoardOptions = {
+    id: "board-01",
+    position: game ? game.fen() : "8/8/8/8/8/8/8/8 w - - 0 1",
+    boardOrientation: boardOrientation,
+    onPieceDrop: makeAMove,
+    allowDragging: !isFailed,
+
+    onPromotionCheck: handlePromotionCheck,
+    onPromotionPieceSelect: handlePromotionPieceSelect,
+
+    animationDurationInMs: boardAnimationDuration,
+    darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
+    lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
+  };
+
   if (!puzzle || !game) {
     return (
       <div>
@@ -246,24 +313,15 @@ export default function PuzzleGame({ onUpdateElo }) {
     );
   }
 
-  /**
-   * Cấu hình các thuộc tính và sự kiện của bàn cờ bao gồm id, position -> thế cờ hiện tại, onPieceDrop -> hàm xử lý khi thả quân cờ
-   */
-  const chessBoardOptions = {
-    id: "board-01",
-    boardOrientation: boardOrientation,
-    onPieceDrop: makeAMove,
-    allowDragging: !isFailed,
-    position: game ? game.fen() : "8/8/8/8/8/8/8/8 w - - 0 1",
-    animationDurationInMs: 300,
-    darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
-    lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
-  };
-
   return (
     <main className="flex justify-between w-full max-w-6xl">
-      <div className="w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
+      <div className="relative w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
         <Chessboard key={puzzle.puzzle_id} options={chessBoardOptions} />
+
+        <PromotionDialog
+          promotionData={promotionData}
+          onSelect={(pieceType) => handlePromotionPieceSelect(pieceType)}
+        />
       </div>
 
       <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
