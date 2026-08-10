@@ -73,7 +73,7 @@ export default function PuzzleGame({ onUpdateElo }) {
     setIsFailed(false);
 
     try {
-      // const data = await getPuzzleById(242755);
+      // const data = await getPuzzleById(273139);
       const data = await getRandomPuzzle();
 
       const newGame = new Chess(data.fen_position);
@@ -101,6 +101,40 @@ export default function PuzzleGame({ onUpdateElo }) {
   }, []);
 
   /**
+   * Xử lý sự kiện người chơi ấn vào nút View Solution để xem đáp án.
+   * Tự động chạy qua 1 lượt tất cả các nước đi chính xác từ vị trí đi sai của người chơi.
+   */
+  const showSolution = async () => {
+    if (!puzzle || isCompleted) return;
+    setBoardAnimationDuration(200);
+    setIsCompleted(true);
+
+    const movesArray = correctMovesArray(puzzle.correct_moves);
+    const newGame = new Chess(game.fen());
+    for (let i = moveIndex; i < movesArray.length; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+
+      const moveStr = movesArray[i];
+
+      const sourceSquare = moveStr.substring(0, 2);
+      const targetSquare = moveStr.substring(2, 4);
+      const promotion = moveStr[4] || undefined;
+
+      const move = newGame.move({
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: promotion,
+      });
+
+      if (move) {
+        playSound("move");
+        setGame(new Chess(newGame.fen()));
+      }
+    }
+    playSound("correct");
+  };
+
+  /**
    * Xử lý logic máy tự động đi các nước đi đúng bên phía đối thủ trong chế độ giải đố.
    * Hàm kiểm tra tiến trình câu đố, lấy nước đi tương ứng từ mảng "movesArray",
    * cập nhật trạng thái bàn cờ rồi chuyển lượt sang người chơi hoặc hoàn thành câu đố.
@@ -117,6 +151,7 @@ export default function PuzzleGame({ onUpdateElo }) {
       setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
       onUpdateElo(response.elo_changed);
+      setIsCompleted(true);
       return;
     }
 
@@ -151,6 +186,7 @@ export default function PuzzleGame({ onUpdateElo }) {
       setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
       onUpdateElo(response.elo_changed);
+      setIsCompleted(true);
     } else {
       setMessage("Player Turn...");
     }
@@ -259,6 +295,7 @@ export default function PuzzleGame({ onUpdateElo }) {
           setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
           console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
           onUpdateElo(response.elo_changed);
+          setIsCompleted(true);
         } else {
           makeEngineMove(newGame, movesArray, nextIndex);
         }
@@ -305,7 +342,12 @@ export default function PuzzleGame({ onUpdateElo }) {
    * Tự động đi nước đi tiếp theo cho người chơi.
    */
   const handleGetHelp = async () => {
-    setMessage("Solving...");
+    if (!puzzle || isCompleted) {
+      return;
+    }
+    if (!isCompleted) {
+      setMessage("Solving...");
+    }
     const data = await getHelp(
       puzzle.puzzle_id,
       moveIndex,
@@ -387,7 +429,10 @@ export default function PuzzleGame({ onUpdateElo }) {
             </button>
           )}
           {isFailed && (
-            <button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
+            <button
+              onClick={showSolution}
+              className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase"
+            >
               View solution
             </button>
           )}
