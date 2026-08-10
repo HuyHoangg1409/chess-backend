@@ -291,6 +291,59 @@ def random_puzzles_without_difficulty(db: Session = Depends(database.get_db)):
     return puzzle
 
 
+@app.post("/puzzles/help", status_code=status.HTTP_200_OK)
+def get_puzzle_help(
+    request: schemas.HelpRequest,
+    db: Session = Depends(database.get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Trả về nước đi chính xác theo đáp án hiện tại của người chơi.
+
+    Args:
+        request (schemas.HelpRequest): Bao gồm "puzzle_id" và "move_index"
+        db (Session): Phiên kết nối cơ sở dữ liệu
+        current_user (dict): Thông tin của người dùng hiện tại được giải mã từ JWT
+
+    Raises:
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy người chơi trong database
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy câu đố trong database
+
+    Returns:
+        dict: Trả về dict bao gồm "hint" là nước đi chính xác mà người chơi cần
+    """
+    db_user = (
+        db.query(models.User)
+        .filter(models.User.user_id == current_user.get("user_id"))
+        .first()
+    )
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
+        )
+
+    db_puzzle = (
+        db.query(models.Puzzles).filter(models.Puzzles.puzzle_id == request.puzzle_id).first()
+    )
+    if not db_puzzle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
+        )
+
+    correctMovesArray = db_puzzle.correct_moves.strip().split(" ")
+    help = correctMovesArray[request.move_index]
+
+    new_elo, elo_change = calculate_new_elo(db_user.elo_rating, db_puzzle.rating, False)
+    db_user.elo_rating -= round(abs(elo_change) / 2)
+    print(f"Trừ {round(abs(elo_change) / 2)}")
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+
+    return {
+        "hint": help
+    }
+
+
 @app.post(
     "/puzzles/check",
     response_model=schemas.PuzzleResultResponse,

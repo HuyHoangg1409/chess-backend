@@ -19,6 +19,7 @@ class PuzzleCreate(BaseModel):
     fen_position: str
     correct_moves: str
     difficulty: str
+    rating: str
 
 
 class PuzzleResponse(BaseModel):
@@ -26,6 +27,7 @@ class PuzzleResponse(BaseModel):
     fen_position: str
     difficulty: str
     correct_moves: str
+    rating: int
 
     class config:
         from_attributes = True
@@ -41,3 +43,8 @@ class PuzzleResultResponse(BaseModel):
     is_completed: bool
     elo_changed: int
     message: str
+
+
+class HelpRequest(BaseModel):
+    puzzle_id: int
+    move_index: int
