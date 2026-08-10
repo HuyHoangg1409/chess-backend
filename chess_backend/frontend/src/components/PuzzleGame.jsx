@@ -1,7 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Chessboard, defaultDarkSquareStyle } from "react-chessboard";
+import {
+  Chessboard,
+  defaultDarkSquareStyle,
+  defaultDraggingPieceGhostStyle,
+} from "react-chessboard";
 import { Chess } from "chess.js";
-import { checkPuzzle, getPuzzleById, getRandomPuzzle } from "../services/api";
+import {
+  checkPuzzle,
+  getPuzzleById,
+  getRandomPuzzle,
+  getHelp,
+} from "../services/api";
 import {
   correctMovesArray,
   getTurn,
@@ -64,9 +73,8 @@ export default function PuzzleGame({ onUpdateElo }) {
     setIsFailed(false);
 
     try {
-      const data = await getPuzzleById(738933);
-      // const data = await getPuzzleById(241361);
-      // const data = await getRandomPuzzle();
+      // const data = await getPuzzleById(242755);
+      const data = await getRandomPuzzle();
 
       const newGame = new Chess(data.fen_position);
       const movesArray = correctMovesArray(data.correct_moves);
@@ -116,7 +124,6 @@ export default function PuzzleGame({ onUpdateElo }) {
 
     const engineMoves = getMove(movesArray[index]);
     if (!engineMoves) return;
-    console.log(engineMoves);
 
     const newGame = new Chess(currentGame.fen());
     const move = newGame.move({
@@ -163,9 +170,8 @@ export default function PuzzleGame({ onUpdateElo }) {
     const isPromotion = handlePromotionCheck(
       pieceObject.sourceSquare,
       pieceObject.targetSquare,
-      pieceObject.piece.pieceType,
+      pieceObject.piece?.pieceType || "P",
     );
-    console.log("p", isPromotion);
 
     if (isPromotion && !selectedPromotion) {
       setPromotionData({
@@ -188,7 +194,6 @@ export default function PuzzleGame({ onUpdateElo }) {
       });
     } catch (e) {
       playSound("decline");
-      console.error(e);
 
       return false;
     }
@@ -208,8 +213,6 @@ export default function PuzzleGame({ onUpdateElo }) {
     const movesArray = correctMovesArray(puzzle.correct_moves);
 
     if (moveIndex >= movesArray.length) return false;
-
-    console.log(newHistory.join(" "));
 
     checkPuzzle(
       puzzle.puzzle_id,
@@ -266,11 +269,15 @@ export default function PuzzleGame({ onUpdateElo }) {
       });
   };
 
+  /**
+   * Kiểm tra nước đi có phải là phong cấp hay không.
+   * @param {string} sourceSquare - Ô xuất phát của quân cờ
+   * @param {string} targetSquare - Ô đích đến của quân cờ
+   * @param {string} piece - Loại quân cờ thực hiện nước đi
+   * @returns {boolean} Trả về true nếu nước đi là phong cấp, false nếu nước đi không phải phong cấp
+   */
   const handlePromotionCheck = (sourceSquare, targetSquare, piece) => {
-    // console.log(piece);
-
     const isPawn = piece.toUpperCase().endsWith("P");
-    // console.log(isPawn);
 
     const isWhitePromotion = isPawn && targetSquare[1] == "8";
     const isBlackPromotion = isPawn && targetSquare[1] == "1";
@@ -278,6 +285,12 @@ export default function PuzzleGame({ onUpdateElo }) {
     return isWhitePromotion || isBlackPromotion;
   };
 
+  /**
+   * Xử lý sự kiện người chơi chọn ô phong cấp.
+   * Đóng bảng chọn và thực hiện nước đi với loại phong cấp được chọn.
+   * @param {char} promotionPiece - Kí tự đại diện cho quân muốn phong cấp
+   * @returns {void}
+   */
   const handlePromotionPieceSelect = (promotionPiece) => {
     if (!promotionData) return;
 
@@ -285,6 +298,27 @@ export default function PuzzleGame({ onUpdateElo }) {
     setPromotionData(null);
 
     makeAMove(pieceObject, promotionPiece);
+  };
+
+  /**
+   * Xử lý sự kiện khi người chơi nhấn vào hút Help để nhận trợ giúp.
+   * Tự động đi nước đi tiếp theo cho người chơi.
+   */
+  const handleGetHelp = async () => {
+    setMessage("Solving...");
+    const data = await getHelp(
+      puzzle.puzzle_id,
+      moveIndex,
+      localStorage.getItem("access_token"),
+    );
+    makeAMove(
+      {
+        sourceSquare: data.hint.substring(0, 2),
+        targetSquare: data.hint.substring(2, 4),
+      },
+      data.hint.length == 5 ? data.hint[4] : "q",
+    );
+    setBoardAnimationDuration(200);
   };
 
   /**
@@ -296,6 +330,7 @@ export default function PuzzleGame({ onUpdateElo }) {
     boardOrientation: boardOrientation,
     onPieceDrop: makeAMove,
     allowDragging: !isFailed,
+    draggingPieceGhostStyle: { opacity: 0, filter: `blur(0px)` },
 
     onPromotionCheck: handlePromotionCheck,
     onPromotionPieceSelect: handlePromotionPieceSelect,
@@ -326,7 +361,9 @@ export default function PuzzleGame({ onUpdateElo }) {
 
       <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
         <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
-          <span>Puzzle {puzzle.puzzle_id}</span>
+          <span>
+            Puzzle {puzzle.puzzle_id} - {puzzle.rating} ELO
+          </span>
           <p>Difficulty: {puzzle.difficulty}</p>
         </div>
 
@@ -342,7 +379,10 @@ export default function PuzzleGame({ onUpdateElo }) {
             Next Puzzle
           </button>
           {!isFailed && (
-            <button className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase">
+            <button
+              onClick={handleGetHelp}
+              className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-300 cursor-pointer uppercase"
+            >
               Help
             </button>
           )}
