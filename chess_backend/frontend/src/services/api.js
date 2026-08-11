@@ -160,3 +160,30 @@ export const getHelp = async (puzzle_id, moveIndex, token) => {
     throw error;
   }
 };
+
+/**
+ * Gửi request đến api /history/add để cập nhật lịch sử giải đố của người chơi vào database.
+ * @param {int} puzzle_id - ID của puzzle
+ * @param {boolean} status - True nếu người chơi giải đúng, False nếu người chơi giải sai
+ * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
+ * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "message"
+ */
+export const addPuzzleHistory = async (puzzle_id, status, token) => {
+  try {
+    const response = await fetch(`${BASE_URL}/history/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ puzzle_id: puzzle_id, is_correct: status }),
+    });
+    if (!response.ok) {
+      throw new Error("Không kết nối được api /history/add");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("API Error: ", error);
+    throw error;
+  }
+};

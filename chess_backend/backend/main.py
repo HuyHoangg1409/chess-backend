@@ -322,7 +322,9 @@ def get_puzzle_help(
         )
 
     db_puzzle = (
-        db.query(models.Puzzles).filter(models.Puzzles.puzzle_id == request.puzzle_id).first()
+        db.query(models.Puzzles)
+        .filter(models.Puzzles.puzzle_id == request.puzzle_id)
+        .first()
     )
     if not db_puzzle:
         raise HTTPException(
@@ -339,9 +341,7 @@ def get_puzzle_help(
     db.commit()
     db.refresh(db_user)
 
-    return {
-        "hint": help
-    }
+    return {"hint": help}
 
 
 @app.post(
@@ -471,3 +471,59 @@ def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(database.get_db)):
         )
 
     return puzzle
+
+
+@app.post("/history/add", status_code=status.HTTP_200_OK)
+def add_puzzle_history(
+    history: schemas.PuzzleHistoryCreate,
+    db: Session = Depends(database.get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """Thêm lịch sử giải đố của người chơi vào database.
+
+    Args:
+        history (schemas.PuzzleHistoryCreate): Bao gồm "puzzle_id" và "is_correct"
+        db (Session): Phiên kết nối cơ sở dữ liệu
+        current_user (dict): Thông tin của người dùng hiện tại được giải mã từ JWT
+
+    Raises:
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy người chơi
+        HTTPException: Trả về lỗi 404 nếu không tìm thấy câu đố
+
+    Returns:
+        dict: Trả về "message" thông báo lưu lịch sử thành công
+    """
+    db_user = (
+        db.query(models.User)
+        .filter(models.User.user_id == current_user.get("user_id"))
+        .first()
+    )
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
+        )
+
+    db_puzzle = (
+        db.query(models.Puzzles)
+        .filter(models.Puzzles.puzzle_id == history.puzzle_id)
+        .first()
+    )
+    if not db_puzzle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
+        )
+
+    new_elo, elo_changed = calculate_new_elo(
+        db_user.elo_rating, db_puzzle.rating, history.is_correct
+    )
+
+    new_record = models.UserPuzzleHistory(
+        user_id=db_user.user_id,
+        puzzle_id=history.puzzle_id,
+        is_correct=history.is_correct,
+        player_elo=db_user.elo_rating,
+    )
+    db.add(new_record)
+    db.commit()
+    db.refresh(new_record)
+    return {"message": "Lưu lịch sử thành công"}

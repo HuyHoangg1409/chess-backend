@@ -10,6 +10,7 @@ import {
   getPuzzleById,
   getRandomPuzzle,
   getHelp,
+  addPuzzleHistory,
 } from "../services/api";
 import {
   correctMovesArray,
@@ -147,11 +148,12 @@ export default function PuzzleGame({ onUpdateElo }) {
     setBoardAnimationDuration(200);
 
     if (index >= movesArray.length) {
-      playSound("correct");
-      setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
+      playSound("correct");
       onUpdateElo(response.elo_changed);
+      setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       setIsCompleted(true);
+      addPuzzleHistory(puzzle.puzzle_id, true, localStorage.getItem("access_token"));
       return;
     }
 
@@ -182,11 +184,12 @@ export default function PuzzleGame({ onUpdateElo }) {
     setMoveIndex(nextIndex);
 
     if (nextIndex >= movesArray.length) {
-      playSound("correct");
-      setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
+      playSound("correct");
       onUpdateElo(response.elo_changed);
+      setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       setIsCompleted(true);
+      addPuzzleHistory(puzzle.puzzle_id, true, localStorage.getItem("access_token"));
     } else {
       setMessage("Player Turn...");
     }
@@ -257,21 +260,21 @@ export default function PuzzleGame({ onUpdateElo }) {
     )
       .then((response) => {
         if (!response.is_correct) {
-          playSound("decline");
-          setMessage(`Incorrect Answer (${response.elo_changed} ELO)`);
-
-          setIsFailed(true);
           console.log(
             "Đáp án chưa chính xác, trừ ",
             response.elo_changed,
             " elo",
           );
+          playSound("decline");
+          onUpdateElo(response.elo_changed);
           newGame.undo();
+          
+          setIsFailed(true);
+          setMessage(`Incorrect Answer (${response.elo_changed} ELO)`);
           setBoardAnimationDuration(200);
           setGame(new Chess(newGame.fen()));
-
-          onUpdateElo(response.elo_changed);
-
+          
+          addPuzzleHistory(puzzle.puzzle_id, false, localStorage.getItem("access_token"));
           return false;
         }
 
@@ -291,11 +294,12 @@ export default function PuzzleGame({ onUpdateElo }) {
         setMoveIndex(nextIndex);
 
         if (nextIndex >= movesArray.length) {
-          playSound("correct");
-          setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
           console.log("Đáp án chính xác, cộng ", response.elo_changed, " elo");
+          playSound("correct");
           onUpdateElo(response.elo_changed);
+          setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
           setIsCompleted(true);
+          addPuzzleHistory(puzzle.puzzle_id, true, localStorage.getItem("access_token"));
         } else {
           makeEngineMove(newGame, movesArray, nextIndex);
         }
