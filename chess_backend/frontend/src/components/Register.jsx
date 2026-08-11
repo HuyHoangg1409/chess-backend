@@ -1,14 +1,18 @@
 import React, { useState } from "react";
 import { sendRegisterRequest } from "../services/api";
 
-export default function Register({switchToLogin}) {
+export default function Register({ switchToLogin }) {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     confirmPassword: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  /**
+   * Cập nhật dữ liệu từ ô nhập vào formData
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -17,14 +21,57 @@ export default function Register({switchToLogin}) {
     }));
   };
 
+  /**
+   * Kiểm tra hợp lệ thông tin đăng ký của người dùng.
+   * @param {*} username - Tên tài khoản của người dùng
+   * @param {*} password - Mật khẩu
+   * @param {*} confirmedPassword - Mật khẩu xác nhận
+   * @returns {string|null} Trả về chuỗi báo lỗi nếu có lỗi hoặc trả về null nếu thông tin đăng ký hợp lệ
+   */
+  const checkUserAndPass = (username, password, confirmedPassword) => {
+    if (!username || !username.trim()) {
+      return "Tài khoản không được để trống";
+    }
+
+    if (password != confirmedPassword) {
+      return "Mật khẩu xác nhận không khớp";
+    }
+
+    const userRegex = /^[a-zA-Z0-9]+$/;
+    const passRegex = /^[a-zA-Z0-9!@#_$]+$/;
+    if (!userRegex.test(username)) {
+      return "Tài khoản không được chứa kí tự đặc biệt";
+    }
+    if (!passRegex.test(password)) {
+      return "Mật khẩu chỉ được chứa các kí tự a-z, A-Z, 0-9 và các kí tự đặc biệt [!,@,#,_,$]";
+    }
+
+    if (username.length < 5 || username.length > 20) {
+      return "Tài khoản phải có độ dài từ 5 đến 20 kí tự";
+    }
+    if (password.length < 6) {
+      return "Mật khẩu quá ngắn";
+    }
+    return null;
+  };
+
+  /**
+   * Xử lý sự kiện người dùng nhấn nút đăng ký.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
-    if (formData.password != formData.confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp");
+
+    const error = checkUserAndPass(
+      formData.username,
+      formData.password,
+      formData.confirmPassword,
+    );
+    if (error) {
+      setError(error);
       return;
     }
 
+    setLoading(true);
     try {
       const data = await sendRegisterRequest({
         username: formData.username,
@@ -33,7 +80,9 @@ export default function Register({switchToLogin}) {
       alert("Đăng ký thành công");
       switchToLogin();
     } catch (error) {
-      setError("Tên tài khoản đã tồn tại");
+      setError(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,14 +160,19 @@ export default function Register({switchToLogin}) {
 
           <button
             type="submit"
-            className="w-full py-4 mt-4 text-xl font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
+            disabled={loading}
+            className="w-full py-4 text-xl font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
           >
-            ĐĂNG KÝ
+            {loading ? "Đang xử lý..." : "ĐĂNG KÝ"}
           </button>
 
           <p className="flex gap-4 justify-center text-center">
             Đã có tài khoản?
-            <button type="button" onClick={switchToLogin} className="text-green-400 hover:text-green-500 cursor-pointer font-semibold">
+            <button
+              type="button"
+              onClick={switchToLogin}
+              className="text-green-400 hover:text-green-500 cursor-pointer font-semibold"
+            >
               Đăng nhập ngay
             </button>
           </p>
