@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, Text, ForeignKey, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+from datetime import datetime
 
 
 class Base(DeclarativeBase):
@@ -15,6 +16,7 @@ class User(Base):
     )
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     elo_rating: Mapped[int] = mapped_column(Integer, default=1200)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
 
 class Puzzles(Base):
@@ -32,13 +34,15 @@ class Puzzles(Base):
 class UserPuzzleHistory(Base):
     __tablename__ = "user_puzzle_history"
 
-    puzzle_history_id: Mapped[str] = mapped_column(
-        Integer, primary_key=True, index=True
+    puzzle_history_id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True, index=True
     )
-    user_id: Mapped[str] = mapped_column(
-        Integer, ForeignKey("user.user_id"), nullable=False
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
     )
-    puzzle_id: Mapped[str] = mapped_column(
+    puzzle_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("puzzles.puzzle_id"), nullable=False
     )
-    is_correct: Mapped[str] = mapped_column(Boolean, nullable=False)
+    is_correct: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    player_elo: Mapped[int] = mapped_column(Integer, nullable=False)
+    solved_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)

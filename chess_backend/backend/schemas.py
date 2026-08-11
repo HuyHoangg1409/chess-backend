@@ -48,3 +48,8 @@ class PuzzleResultResponse(BaseModel):
 class HelpRequest(BaseModel):
     puzzle_id: int
     move_index: int
+
+
+class PuzzleHistoryCreate(BaseModel):
+    puzzle_id: int
+    is_correct: bool
