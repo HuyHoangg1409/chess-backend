@@ -5,20 +5,22 @@ import {
   defaultDraggingPieceGhostStyle,
 } from "react-chessboard";
 import { Chess } from "chess.js";
+import { playSound } from "../../utils/sounds";
+import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
 import {
   checkPuzzle,
   getPuzzleById,
   getRandomPuzzle,
   getHelp,
   addPuzzleHistory,
-} from "../services/api";
+} from "../../services/api";
 import {
   correctMovesArray,
   getTurn,
   getOppositeTurn,
   getMove,
-} from "../utils/chessHelper";
-import PromotionDialog from "./PromotionDialog";
+} from "../../utils/chessHelper";
+import PromotionDialog from "../../components/PromotionDialog";
 
 export default function PuzzleGame({ onUpdateElo }) {
   const [puzzle, setPuzzle] = useState(null);
@@ -33,30 +35,6 @@ export default function PuzzleGame({ onUpdateElo }) {
   const [promotionData, setPromotionData] = useState(null);
 
   const isFetchingRef = useRef(false);
-  const soundsRef = useRef({
-    move: new Audio("/audio/move.mp3"),
-    capture: new Audio("/audio/capture.mp3"),
-    check: new Audio("/audio/move-check.mp3"),
-    correct: new Audio("/audio/correct.mp3"),
-    decline: new Audio("/audio/decline.mp3"),
-  });
-
-  /**
-   * Phát sound effect tương ứng với soundName chỉ định và tự động tua lại ban đầu trước khi phát
-   * @param {string} soundName - Tên âm thanh cần phát
-   */
-  const playSound = (soundName) => {
-    const sound = soundsRef.current[soundName];
-    if (sound) {
-      if (soundName === "decline") {
-        sound.volume = 0.5;
-      } else if (soundName === "move") {
-        sound.volume = 1.0;
-      }
-      sound.currentTime = 0;
-      sound.play().catch(() => {});
-    }
-  };
 
   /**
    * Gọi API từ backend để lấy ngẫu nhiên 1 câu đố từ database và cập nhật lại trạng thái bàn cờ hiện tại.
@@ -153,7 +131,11 @@ export default function PuzzleGame({ onUpdateElo }) {
       onUpdateElo(response.elo_changed);
       setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       setIsCompleted(true);
-      addPuzzleHistory(puzzle.puzzle_id, true, localStorage.getItem("access_token"));
+      addPuzzleHistory(
+        puzzle.puzzle_id,
+        true,
+        localStorage.getItem("access_token"),
+      );
       return;
     }
 
@@ -189,7 +171,11 @@ export default function PuzzleGame({ onUpdateElo }) {
       onUpdateElo(response.elo_changed);
       setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
       setIsCompleted(true);
-      addPuzzleHistory(puzzle.puzzle_id, true, localStorage.getItem("access_token"));
+      addPuzzleHistory(
+        puzzle.puzzle_id,
+        true,
+        localStorage.getItem("access_token"),
+      );
     } else {
       setMessage("Player Turn...");
     }
@@ -268,13 +254,17 @@ export default function PuzzleGame({ onUpdateElo }) {
           playSound("decline");
           onUpdateElo(response.elo_changed);
           newGame.undo();
-          
+
           setIsFailed(true);
           setMessage(`Incorrect Answer (${response.elo_changed} ELO)`);
           setBoardAnimationDuration(200);
           setGame(new Chess(newGame.fen()));
-          
-          addPuzzleHistory(puzzle.puzzle_id, false, localStorage.getItem("access_token"));
+
+          addPuzzleHistory(
+            puzzle.puzzle_id,
+            false,
+            localStorage.getItem("access_token"),
+          );
           return false;
         }
 
@@ -299,7 +289,11 @@ export default function PuzzleGame({ onUpdateElo }) {
           onUpdateElo(response.elo_changed);
           setMessage(`Puzzle Done (+${response.elo_changed} ELO)`);
           setIsCompleted(true);
-          addPuzzleHistory(puzzle.puzzle_id, true, localStorage.getItem("access_token"));
+          addPuzzleHistory(
+            puzzle.puzzle_id,
+            true,
+            localStorage.getItem("access_token"),
+          );
         } else {
           makeEngineMove(newGame, movesArray, nextIndex);
         }
@@ -367,25 +361,6 @@ export default function PuzzleGame({ onUpdateElo }) {
     setBoardAnimationDuration(200);
   };
 
-  /**
-   * Cấu hình các thuộc tính và sự kiện của bàn cờ bao gồm id, position -> thế cờ hiện tại, onPieceDrop -> hàm xử lý khi thả quân cờ
-   */
-  const chessBoardOptions = {
-    id: "board-01",
-    position: game ? game.fen() : "8/8/8/8/8/8/8/8 w - - 0 1",
-    boardOrientation: boardOrientation,
-    onPieceDrop: makeAMove,
-    allowDragging: !isFailed,
-    draggingPieceGhostStyle: { opacity: 0, filter: `blur(0px)` },
-
-    onPromotionCheck: handlePromotionCheck,
-    onPromotionPieceSelect: handlePromotionPieceSelect,
-
-    animationDurationInMs: boardAnimationDuration,
-    darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
-    lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
-  };
-
   if (!puzzle || !game) {
     return (
       <div>
@@ -397,7 +372,16 @@ export default function PuzzleGame({ onUpdateElo }) {
   return (
     <main className="flex justify-between w-full max-w-6xl">
       <div className="relative w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
-        <Chessboard key={puzzle.puzzle_id} options={chessBoardOptions} />
+        <ChessBoardView
+          key={puzzle.puzzle_id}
+          game={game}
+          boardOrientation={boardOrientation}
+          onPieceDrop={makeAMove}
+          allowDragging={!isFailed}
+          onPromotionCheck={handlePromotionCheck}
+          onPromotionPieceSelect={handlePromotionPieceSelect}
+          boardAnimationDuration={boardAnimationDuration}
+        />
 
         <PromotionDialog
           promotionData={promotionData}
