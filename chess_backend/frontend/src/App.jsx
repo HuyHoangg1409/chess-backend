@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import PuzzleGame from "./features/puzzle/PuzzleGame";
+import AIGame from "./features/playWithBots/AIGame";
 import Register from "./components/Register";
 import Auth from "./components/Auth";
 
@@ -82,16 +83,15 @@ function App() {
         />
         <div className="flex justify-between w-full">
           <main className="flex justify-around w-full max-w-6xl">
-            {
-              (currentMode == "puzzle" && (
-                <PuzzleGame
-                  currentUser={currentUser}
-                  currentMode={setCurrentMode}
-                  onUpdateElo={handleUpdateElo}
-                  onLogout={handleLogout}
-                />
-              ))
-            }
+            {currentMode == "puzzle" && (
+              <PuzzleGame
+                currentUser={currentUser}
+                currentMode={setCurrentMode}
+                onUpdateElo={handleUpdateElo}
+                onLogout={handleLogout}
+              />
+            )}
+            {currentMode == "ai" && <AIGame />}
           </main>
         </div>
       </div>
