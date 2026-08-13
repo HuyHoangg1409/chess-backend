@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { getCurrentUser } from "./services/api";
 import Login from "./components/Login";
 import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
 import Footer from "./components/Footer";
 import PuzzleGame from "./features/puzzle/PuzzleGame";
 import Register from "./components/Register";
@@ -11,6 +12,7 @@ import Auth from "./components/Auth";
 function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token"));
   const [currentUser, setCurrentUser] = useState(null);
+  const [currentMode, setCurrentMode] = useState("puzzle");
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.
@@ -69,9 +71,30 @@ function App() {
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen bg-chess-bg text-text-white p-6">
-      <Header currentUser={currentUser}/>
+      <Header currentUser={currentUser} />
 
-      <PuzzleGame currentUser={currentUser} onUpdateElo={handleUpdateElo} onLogout={handleLogout} />
+      <div className="flex justify-between h-fit w-full max-w-7xl">
+        <Sidebar
+          currentUser={currentUser}
+          currentMode={currentMode}
+          onSelectMode={setCurrentMode}
+          onLogout={handleLogout}
+        />
+        <div className="flex justify-between w-full">
+          <main className="flex justify-around w-full max-w-6xl">
+            {
+              (currentMode == "puzzle" && (
+                <PuzzleGame
+                  currentUser={currentUser}
+                  currentMode={setCurrentMode}
+                  onUpdateElo={handleUpdateElo}
+                  onLogout={handleLogout}
+                />
+              ))
+            }
+          </main>
+        </div>
+      </div>
 
       <Footer />
     </div>

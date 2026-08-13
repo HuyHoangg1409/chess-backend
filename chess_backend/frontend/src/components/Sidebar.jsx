@@ -7,7 +7,7 @@ const MENU_ITEMS = [
 
 export default function Sidebar({ currentUser, currentMode, onSelectMode, onLogout }) {
   return (
-    <aside className="flex flex-col text-text-white bg-transparent w-62 p-3 sticky top-0 shrink-0 border-r border-aside-border-right">
+    <aside className="flex flex-col text-text-white bg-transparent min-h-140 w-62 p-3 sticky top-0 shrink-0 border-r border-aside-border-right">
       <div>
         <div className="flex items-end justify-center gap-2 py-3 mb-6 border-b border-aside-border-right/60">
           <span className="text-2xl">♟️</span>
