@@ -35,16 +35,18 @@ export const ChessBoardView = ({
   boardAnimationDuration,
 }) => {
   return (
-    <Chessboard
-      options={PUZZLE_BOARD_OPTIONS(
-        game,
-        boardOrientation,
-        onPieceDrop,
-        allowDragging,
-        onPromotionCheck,
-        onPromotionPieceSelect,
-        boardAnimationDuration,
-      )}
-    />
+    <div>
+      <Chessboard
+        options={PUZZLE_BOARD_OPTIONS(
+          game,
+          boardOrientation,
+          onPieceDrop,
+          allowDragging,
+          onPromotionCheck,
+          onPromotionPieceSelect,
+          boardAnimationDuration,
+        )}
+      />
+    </div>
   );
 };

@@ -4,7 +4,7 @@ import { getCurrentUser } from "./services/api";
 import Login from "./components/Login";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import PuzzleGame from "./components/PuzzleGame";
+import PuzzleGame from "./features/puzzle/PuzzleGame";
 import Register from "./components/Register";
 import Auth from "./components/Auth";
 
@@ -69,9 +69,9 @@ function App() {
 
   return (
     <div className="flex flex-col items-center justify-between min-h-screen bg-chess-bg text-text-white p-6">
-      <Header currentUser={currentUser} onLogout={handleLogout} />
+      <Header currentUser={currentUser}/>
 
-      <PuzzleGame onUpdateElo={handleUpdateElo} />
+      <PuzzleGame currentUser={currentUser} onUpdateElo={handleUpdateElo} onLogout={handleLogout} />
 
       <Footer />
     </div>

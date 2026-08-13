@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Header({ currentUser, onLogout }) {
+export default function Header({ currentUser}) {
   return (
     <header className="flex justify-between items-center w-full max-w-7xl py-4 border-b-2 border-white mb-8">
       <div className="flex items-center">
@@ -18,8 +18,6 @@ export default function Header({ currentUser, onLogout }) {
             <span className="text-xs font-mono">{currentUser.elo_rating} <span>ELO</span></span>
           </div>
         </div>
-
-        <button onClick={onLogout} className="flex items-center justify-center size-9 leading-none text-white bg-red-600 text-xl rounded-full border border-chess-border cursor-pointer hover:bg-red-700 transition-colors duration-300">⏻</button>
       </div>
     </header>
   );
