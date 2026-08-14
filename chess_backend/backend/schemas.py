@@ -53,3 +53,8 @@ class HelpRequest(BaseModel):
 class PuzzleHistoryCreate(BaseModel):
     puzzle_id: int
     is_correct: bool
+
+
+class GameState(BaseModel):
+    fen: str
+    difficult: int

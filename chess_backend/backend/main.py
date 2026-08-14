@@ -4,10 +4,12 @@ from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+import chess
 import backend.secure as secure
 import backend.database as database
 import backend.models as models
 import backend.schemas as schemas
+from backend.ai_engine.greedy import get_greedy_move
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -527,3 +529,28 @@ def add_puzzle_history(
     db.commit()
     db.refresh(new_record)
     return {"message": "Lưu lịch sử thành công"}
+
+
+@app.post("/ai/greedy", status_code=status.HTTP_200_OK)
+def get_greedy_move_endpoint(
+    gameState: schemas.GameState, db: Session = Depends(database.get_db)
+):
+    """Lấy nước đi tốt nhất bot có thể đi với thuật toán greedy.
+
+    Args:
+        gameState (schemas.GameState): Bao gồm "fen" và "difficult"
+        db (Session): Phiên kết nối cơ sở dữ liệu
+
+    Returns:
+        dict: Trả về "best_move" là nước đi tốt nhất của thuật toán
+    """
+    board = chess.Board(gameState.fen)
+
+    if gameState.difficult == 1:
+        move = get_greedy_move(board)
+    else:
+        move = get_greedy_move(board)
+
+    if move is None:
+        return {"best_move": None}
+    return {"best_move": move.uci()}
