@@ -1,20 +1,32 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-/**
- * Lấy ngẫu nhiên 1 puzzle với độ khó ngẫu nhiên từ database.
- * @returns {Promise<Object>} Dữ liệu JSON chứa thông tin puzzle
- */
-export const getRandomPuzzle = async () => {
+const request = async (endpoint, options = {}) => {
+  const defaultHeader = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
   try {
-    const response = await fetch(`${BASE_URL}/puzzles/randomWithoutDifficulty`);
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: defaultHeader,
+    });
     if (!response.ok) {
-      throw new Error("Không lấy được puzzle");
+      throw new Error(`Lỗi gọi api ${endpoint}`);
     }
     return await response.json();
   } catch (error) {
     console.error("API Error: ", error);
     throw error;
   }
+};
+
+/**
+ * Lấy ngẫu nhiên 1 puzzle với độ khó ngẫu nhiên từ database.
+ * @returns {Promise<Object>} Dữ liệu JSON chứa thông tin puzzle
+ */
+export const getRandomPuzzle = async () => {
+  return await request("/puzzles/randomWithoutDifficulty", { method: "GET" });
 };
 
 /**
@@ -23,16 +35,7 @@ export const getRandomPuzzle = async () => {
  * @returns {Promise<Object>} Dữ liệu JSON chứa thông tin puzzle
  */
 export const getPuzzleById = async (puzzleId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/puzzles/${puzzleId}`);
-    if (!response.ok) {
-      throw new Error("Không lấy được puzzle với id tương ứng");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/puzzles/${puzzleId}", { method: "GET" });
 };
 
 /**
@@ -41,22 +44,10 @@ export const getPuzzleById = async (puzzleId) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi đăng nhập thành công bao gồm "access_token" và "token_type"
  */
 export const sendLoginRequest = async (userData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) {
-      throw new Error("Không đăng nhập được");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/login", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
 };
 
 /**
@@ -65,22 +56,10 @@ export const sendLoginRequest = async (userData) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi đăng ký thành công bao gồm "user_id", "username" và "elo_rating"
  */
 export const sendRegisterRequest = async (userData) => {
-  try {
-    const response = await fetch(`${BASE_URL}/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
-    });
-    if (!response.ok) {
-      throw new Error("Lỗi khi đăng ký tài khoản");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/register", {
+    method: "POST",
+    body: JSON.stringify(userData),
+  });
 };
 
 /**
@@ -89,22 +68,10 @@ export const sendRegisterRequest = async (userData) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi xác thực người dùng thành công bao gồm "user_id", "username" và "elo_rating"
  */
 export const getCurrentUser = async (token) => {
-  try {
-    const response = await fetch(`${BASE_URL}/auth/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!response.ok) {
-      throw new Error("Không thể xác minh người dùng");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/auth/me", {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
 };
 
 /**
@@ -115,23 +82,11 @@ export const getCurrentUser = async (token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "is_correct", "is_completed" và "message"
  */
 export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
-  try {
-    const response = await fetch(`${BASE_URL}/puzzles/check`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ puzzle_id: puzzle_id, user_move: userAnswer }),
-    });
-    if (!response.ok) {
-      throw new Error("Không kết nối được api /puzzles/check");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/puzzles/check", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ puzzle_id: puzzle_id, user_move: userAnswer }),
+  });
 };
 
 /**
@@ -142,23 +97,13 @@ export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "hint" là nước đi chính xác tại moveIndex
  */
 export const getHelp = async (puzzle_id, moveIndex, token) => {
-  try {
-    const response = await fetch(`${BASE_URL}/puzzles/help`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ puzzle_id: puzzle_id, move_index: moveIndex }),
-    });
-    if (!response.ok) {
-      throw new Error("Không kết nối được api /puzzles/help");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/puzzles/help", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ puzzle_id: puzzle_id, move_index: moveIndex }),
+  });
 };
 
 /**
@@ -169,21 +114,11 @@ export const getHelp = async (puzzle_id, moveIndex, token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "message"
  */
 export const addPuzzleHistory = async (puzzle_id, status, token) => {
-  try {
-    const response = await fetch(`${BASE_URL}/history/add`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ puzzle_id: puzzle_id, is_correct: status }),
-    });
-    if (!response.ok) {
-      throw new Error("Không kết nối được api /history/add");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("API Error: ", error);
-    throw error;
-  }
+  return await request("/history/add", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ puzzle_id: puzzle_id, is_correct: status }),
+  });
 };
