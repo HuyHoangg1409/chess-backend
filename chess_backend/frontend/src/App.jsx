@@ -13,7 +13,9 @@ import Auth from "./components/Auth";
 function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token"));
   const [currentUser, setCurrentUser] = useState(null);
-  const [currentMode, setCurrentMode] = useState("puzzle");
+  const [currentMode, setCurrentMode] = useState(() => {
+    return localStorage.getItem("app_mode") || "puzzle";
+  });
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.
@@ -37,6 +39,10 @@ function App() {
 
     fetchUserData();
   }, [token]);
+
+  useEffect(() => {
+    localStorage.setItem("app_mode", currentMode);
+  }, [currentMode]);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
@@ -86,12 +92,10 @@ function App() {
             {currentMode == "puzzle" && (
               <PuzzleGame
                 currentUser={currentUser}
-                currentMode={setCurrentMode}
                 onUpdateElo={handleUpdateElo}
-                onLogout={handleLogout}
               />
             )}
-            {currentMode == "ai" && <AIGame />}
+            {currentMode == "ai" && <AIGame currentUser={currentUser} />}
           </main>
         </div>
       </div>

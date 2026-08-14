@@ -24,9 +24,7 @@ import PromotionDialog from "../../components/PromotionDialog";
 
 export default function PuzzleGame({
   currentUser,
-  currentMode,
   onUpdateElo,
-  onLogout,
 }) {
   const [puzzle, setPuzzle] = useState(null);
   const [game, setGame] = useState(null);
