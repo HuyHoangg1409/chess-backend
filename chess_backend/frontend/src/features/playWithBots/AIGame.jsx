@@ -70,6 +70,7 @@ export default function AIGame({ currentUser }) {
       if (!newGame.isGameOver()) {
         setTimeout(() => fetchAITurn(fen_position), 400);
       } else {
+        playSound("correct");
         setIsCompleted(true);
         setMessage("Player Wins");
       }
