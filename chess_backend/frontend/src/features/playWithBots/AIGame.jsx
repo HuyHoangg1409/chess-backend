@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import { playSound } from "../../utils/sounds";
 import { Chess } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
 import { getAIGreedyMove } from "../../services/api";
@@ -8,11 +9,11 @@ export default function AIGame({ currentUser }) {
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [message, setMessage] = useState("");
   const [difficulty, setdifficulty] = useState(null);
+  const [isCompleted, setIsCompleted] = useState(false);
   const playerColor = "w";
 
   const fetchAITurn = useCallback(async (currentFen) => {
     setIsAIThinking(true);
-    setMessage("Bot thinking...");
 
     const response = await getAIGreedyMove(currentFen, 1);
     const bestMove = response.best_move;
@@ -23,6 +24,13 @@ export default function AIGame({ currentUser }) {
       to: bestMove.substring(2, 4),
       promotion: bestMove.length > 4 ? bestMove[4] : undefined,
     });
+
+    if (newGame.inCheck()) {
+      playSound("check");
+    } else if (move.isCapture()) {
+      playSound("capture");
+    } else playSound("move");
+
     setGame(newGame);
     setIsAIThinking(false);
     setMessage("Player turn...");
@@ -30,6 +38,10 @@ export default function AIGame({ currentUser }) {
 
   const handlePieceDrop = (pieceObject, selectedPromotion = null) => {
     if (isAIThinking || game.turn() != playerColor) return false;
+    if(isCompleted) {
+      setMessage("Bot Wins");
+      return false;
+    }
 
     try {
       const newGame = new Chess(game.fen());
@@ -40,19 +52,28 @@ export default function AIGame({ currentUser }) {
       });
 
       if (move == null) {
-        setMessage("Nước đi không hợp lệ");
         return false;
       }
+      if (newGame.inCheck()) {
+        playSound("check");
+      } else if (move.isCapture()) {
+        playSound("capture");
+      } else playSound("move");
 
       const fen_position = newGame.fen();
       setGame(newGame);
+      setMessage("Bot thinking...");
       if (!newGame.isGameOver()) {
-        setTimeout(() => fetchAITurn(fen_position), 250);
+        setTimeout(() => fetchAITurn(fen_position), 600);
+      } else {
+        setIsCompleted(true);
+        setMessage("Player Wins");
       }
 
       return true;
     } catch (error) {
-      console.error(error);
+      setMessage("Nước đi không hợp lệ");
+      playSound("decline");
       return false;
     }
   };
@@ -65,7 +86,7 @@ export default function AIGame({ currentUser }) {
   return (
     <>
       <div className="relative w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
-        <ChessBoardView game={game} onPieceDrop={handlePieceDrop} />
+        <ChessBoardView game={game} onPieceDrop={handlePieceDrop} allowDragging={!isCompleted}/>
       </div>
       <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
         <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
@@ -73,7 +94,7 @@ export default function AIGame({ currentUser }) {
           <p>difficulty: </p>
         </div>
         <div className="p-4 mt-4 rounded-lg bg-button-bg-white text-gray-950">
-          <span className="text-xl font-semibold uppercase">{difficulty}</span>
+          <span className="text-xl font-semibold uppercase">{message}</span>
         </div>
         <div className="flex flex-col gap-4 mt-auto text-xl text-white font-semibold">
           <div className="flex gap-3">
