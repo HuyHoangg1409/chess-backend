@@ -124,14 +124,14 @@ export const addPuzzleHistory = async (puzzle_id, status, token) => {
 };
 
 /**
- * Gửi request đến api /ai/greedy để lấy nước đi tốt nhất của bot với thuật toán greedy
+ * Gửi request đến api /ai/move để lấy nước đi tốt nhất của bot với thuật toán có độ sâu tương ứng với độ khó
  * @param {string} fen - Chuỗi FEN của thế cờ hiện tại
  * @param {int} difficult - Độ khó của bot mà người chơi chọn
  * @returns {Promise<Object>} - Dữ liệu JSON trả về từ server bao gồm "best_move"
  */
-export const getAIGreedyMove = async (fen, difficult) => {
-  return await request("/ai/greedy", {
+export const getAIBestMove = async (fen, difficult) => {
+  return await request("/ai/move", {
     method: "POST",
-    body: JSON.stringify({ fen: fen, difficult: difficult }),
+    body: JSON.stringify({ fen: fen, difficult: Number(difficult) }),
   });
 };

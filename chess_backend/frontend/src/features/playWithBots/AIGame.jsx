@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { playSound } from "../../utils/sounds";
 import { Chess } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
-import { getAIGreedyMove } from "../../services/api";
+import { getAIBestMove } from "../../services/api";
 
 export default function AIGame({ currentUser }) {
   const [game, setGame] = useState(new Chess());
@@ -12,10 +12,14 @@ export default function AIGame({ currentUser }) {
   const [isCompleted, setIsCompleted] = useState(false);
   const playerColor = "w";
 
+  useEffect(()=>{
+    setIsCompleted(false);
+  }, [difficulty])
+
   const fetchAITurn = useCallback(async (currentFen) => {
     setIsAIThinking(true);
-
-    const response = await getAIGreedyMove(currentFen, 1);
+    
+    const response = await getAIBestMove(currentFen, difficulty);
     const bestMove = response.best_move;
 
     const newGame = new Chess(currentFen);
@@ -64,7 +68,7 @@ export default function AIGame({ currentUser }) {
       setGame(newGame);
       setMessage("Bot thinking...");
       if (!newGame.isGameOver()) {
-        setTimeout(() => fetchAITurn(fen_position), 600);
+        setTimeout(() => fetchAITurn(fen_position), 400);
       } else {
         setIsCompleted(true);
         setMessage("Player Wins");
@@ -91,7 +95,7 @@ export default function AIGame({ currentUser }) {
       <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
         <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
           <span>playing with bot</span>
-          <p>difficulty: </p>
+          <p>difficulty: {difficulty}</p>
         </div>
         <div className="p-4 mt-4 rounded-lg bg-button-bg-white text-gray-950">
           <span className="text-xl font-semibold uppercase">{message}</span>

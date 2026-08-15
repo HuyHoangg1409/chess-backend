@@ -10,6 +10,7 @@ import backend.database as database
 import backend.models as models
 import backend.schemas as schemas
 from backend.ai_engine.greedy import get_greedy_move
+from backend.ai_engine.minimax import get_minimax_move
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -531,11 +532,11 @@ def add_puzzle_history(
     return {"message": "Lưu lịch sử thành công"}
 
 
-@app.post("/ai/greedy", status_code=status.HTTP_200_OK)
-def get_greedy_move_endpoint(
+@app.post("/ai/move", status_code=status.HTTP_200_OK)
+def get_ai_move(
     gameState: schemas.GameState, db: Session = Depends(database.get_db)
 ):
-    """Lấy nước đi tốt nhất bot có thể đi với thuật toán greedy.
+    """Lấy nước đi tốt nhất bot có thể đi với thuật toán có độ sâu tương ứng với độ khó.
 
     Args:
         gameState (schemas.GameState): Bao gồm "fen" và "difficult"
@@ -545,9 +546,12 @@ def get_greedy_move_endpoint(
         dict: Trả về "best_move" là nước đi tốt nhất của thuật toán
     """
     board = chess.Board(gameState.fen)
+    print(gameState.difficult)
 
     if gameState.difficult == 1:
         move = get_greedy_move(board)
+    elif gameState.difficult == 2:
+        move = get_minimax_move(board, 3)
     else:
         move = get_greedy_move(board)
 
