@@ -1,28 +1,33 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { playSound } from "../../utils/sounds";
-import { Chess } from "chess.js";
+import { Chess, Move } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
 import { getAIBestMove } from "../../services/api";
+import MoveHistoryTable from "../../components/MoveHistoryTable";
 
 export default function AIGame({ currentUser }) {
   const [game, setGame] = useState(new Chess());
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [message, setMessage] = useState("");
-  const [difficulty, setdifficulty] = useState(null);
+  const [difficulty, setDifficulty] = useState(null);
   const [isCompleted, setIsCompleted] = useState(false);
   const playerColor = "w";
 
-  useEffect(()=>{
+  useEffect(() => {
     setIsCompleted(false);
-  }, [difficulty])
+  }, [difficulty]);
 
-  const fetchAITurn = useCallback(async (currentFen) => {
+  const fetchAITurn = async (currentGame) => {
     setIsAIThinking(true);
+
     
-    const response = await getAIBestMove(currentFen, difficulty);
+    console.log(difficulty);
+    const response = await getAIBestMove(currentGame.fen(), difficulty);
+    console.log(difficulty);
     const bestMove = response.best_move;
 
-    const newGame = new Chess(currentFen);
+    const newGame = new Chess();
+    newGame.loadPgn(currentGame.pgn());
     const move = newGame.move({
       from: bestMove.substring(0, 2),
       to: bestMove.substring(2, 4),
@@ -38,17 +43,18 @@ export default function AIGame({ currentUser }) {
     setGame(newGame);
     setIsAIThinking(false);
     setMessage("Player turn...");
-  }, []);
+  };
 
   const handlePieceDrop = (pieceObject, selectedPromotion = null) => {
     if (isAIThinking || game.turn() != playerColor) return false;
-    if(isCompleted) {
+    if (isCompleted) {
       setMessage("Bot Wins");
       return false;
     }
 
     try {
-      const newGame = new Chess(game.fen());
+      const newGame = new Chess();
+      newGame.loadPgn(game.pgn());
       const move = newGame.move({
         from: pieceObject.sourceSquare,
         to: pieceObject.targetSquare,
@@ -64,11 +70,10 @@ export default function AIGame({ currentUser }) {
         playSound("capture");
       } else playSound("move");
 
-      const fen_position = newGame.fen();
       setGame(newGame);
       setMessage("Bot thinking...");
       if (!newGame.isGameOver()) {
-        setTimeout(() => fetchAITurn(fen_position), 400);
+        setTimeout(() => fetchAITurn(newGame), 400);
       } else {
         playSound("correct");
         setIsCompleted(true);
@@ -84,23 +89,32 @@ export default function AIGame({ currentUser }) {
   };
 
   const handleSelectDifficulty = (level) => {
-    setdifficulty(level);
+    setDifficulty(level);
     setGame(new Chess());
   };
 
   return (
     <>
       <div className="relative w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
-        <ChessBoardView game={game} onPieceDrop={handlePieceDrop} allowDragging={!isCompleted}/>
+        <ChessBoardView
+          game={game}
+          onPieceDrop={handlePieceDrop}
+          allowDragging={!isCompleted}
+        />
       </div>
+
       <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
         <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
           <span>playing with bot</span>
           <p>difficulty: {difficulty}</p>
         </div>
+
         <div className="p-4 mt-4 rounded-lg bg-button-bg-white text-gray-950">
           <span className="text-xl font-semibold uppercase">{message}</span>
         </div>
+
+        <MoveHistoryTable history={game.history()} />
+
         <div className="flex flex-col gap-4 mt-auto text-xl text-white font-semibold">
           <div className="flex gap-3">
             <button
