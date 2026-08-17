@@ -4,11 +4,13 @@ const sounds = {
   check: new Audio("/audio/move-check.mp3"),
   correct: new Audio("/audio/correct.mp3"),
   decline: new Audio("/audio/decline.mp3"),
+  game_start: new Audio("/audio/game-start.mp3"),
+  game_end: new Audio("/audio/game-end.mp3"),
 };
 
 /**
  * Phát sound effect tương ứng với soundName chỉ định và tự động tua lại ban đầu trước khi phát.
- * @param {'move' | 'capture' | 'check' | 'correct' | 'decline'} soundName - Tên của âm thanh cần phát
+ * @param {'move' | 'capture' | 'check' | 'correct' | 'decline' | 'game_start' | 'game_end'} soundName - Tên của âm thanh cần phát
  */
 export const playSound = (soundName) => {
   const sound = sounds[soundName];
