@@ -5,6 +5,18 @@ from .evaluation import evaluation
 def minimax(
     board: chess.Board, depth: int, alpha: float, beta: float, is_maximizing: bool
 ) -> float:
+    """Thực hiện thuật toán minimax kết hợp với cắt tỉa alpha-beta để tìm điểm số tối ưu cho trạng thái bàn cờ hiện tại.
+
+    Args:
+        board (chess.Board): Đối tượng bàn cờ hiện tại
+        depth (int): Độ sâu tìm kiếm còn lại trong cây quyết định
+        alpha (float): Giá trị alpha để cắt tỉa, ngưỡng tốt nhất bên maximizing
+        beta (float): Giá trị beta để cắt tỉa, ngưỡng tốt nhất bên minimizing
+        is_maximizing (bool): True nếu đang là lượt trắng, False nếu là lượt đen
+
+    Returns:
+        float: Điểm số đánh giá của trạng thái bàn cờ hiện tại sau khi duyệt độ sâu
+    """
     if board.is_checkmate():
         return -20000 - depth if board.turn == chess.WHITE else 20000 + depth
     if board.is_game_over():
@@ -37,6 +49,15 @@ def minimax(
 
 
 def prefer_move(board, move):
+    """Ưu tiên các nước đi ăn quân lớn hơn, nước đi phong cấp và nước chiếu.
+
+    Args:
+        board (chess.Board): Đối tượng bàn cờ hiện tại
+        move (move): Nước đi cần đánh giá
+
+    Returns:
+        int: Điểm tương ứng với các nước đi
+    """
     if move.promotion:
         return 900
 
@@ -53,6 +74,15 @@ def prefer_move(board, move):
 
 
 def get_minimax_move(board: chess.Board, depth: int = 3):
+    """Tìm và trả về nước đi tốt nhất cho người chơi hiện tại bằng thuật toán minimax.
+
+    Args:
+        board (chess.Board): Đối tượng bàn cờ hiện tại
+        depth (int): Độ sâu tìm kiếm của cây quyết định. Defaults to 3.
+
+    Returns:
+        chess.Move | None: Nước đi tốt nhất được tìm thấy hoặc None
+    """
     if not board.legal_moves:
         return None
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { playSound } from "../../utils/sounds";
 import { Chess, Move } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
@@ -14,12 +14,16 @@ export default function AIGame({ currentUser }) {
   const [gameStarted, setGameStarted] = useState(false);
   const [selectedColor, setSelectedColor] = useState("white");
 
+  const currentRequestIdRef = useRef(0);
+  
   const handleGameStart = () => {
+    currentRequestIdRef.current++;
     playSound("game_start");
     const newGame = new Chess();
     setGame(newGame);
     setIsCompleted(false);
     setGameStarted(true);
+    setIsAIThinking(false);
     setMessage("Game Started");
     if (selectedColor == "black") {
       fetchAITurn(newGame);
@@ -43,10 +47,20 @@ export default function AIGame({ currentUser }) {
   }, [difficulty]);
 
   const fetchAITurn = async (currentGame) => {
+    const requestId = ++currentRequestIdRef.current;
     setIsAIThinking(true);
 
+    try{
     const response = await getAIBestMove(currentGame.fen(), difficulty);
     const bestMove = response.best_move;
+
+    if (requestId != currentRequestIdRef.current) {
+      return;
+    }
+    setGame((prevGame) => {
+      if (prevGame.fen() !== currentGame.fen()) {
+        return prevGame;
+      }});
 
     const newGame = new Chess();
     newGame.loadPgn(currentGame.pgn());
@@ -73,9 +87,14 @@ export default function AIGame({ currentUser }) {
       return;
     }
 
-    setIsAIThinking(false);
     setMessage("Player turn...");
-  };
+  } catch(e){
+    setMessage("Bot đang ốm")
+  } finally{
+      if (requestId === currentRequestIdRef.current) {
+        setIsAIThinking(false);
+      }
+  }};
 
   const handlePieceDrop = (pieceObject, selectedPromotion = null) => {
     const playerColor = selectedColor === "white" ? "w" : "b";
@@ -106,7 +125,7 @@ export default function AIGame({ currentUser }) {
       setGame(newGame);
       setMessage("Bot thinking...");
       if (!newGame.isGameOver()) {
-        setTimeout(() => fetchAITurn(newGame), 400);
+        fetchAITurn(newGame);
       } else {
         if (newGame.isDraw()) {
           playSound("game_end");
@@ -225,10 +244,10 @@ export default function AIGame({ currentUser }) {
           </div>
           <div className="flex flex-col gap-4 mt-auto text-xl text-white font-semibold">
             <button
-              onClick={handleGameStart}
+              onClick={gameStarted ? handleGameRestart : handleGameStart}
               className="p-4 rounded-lg bg-green-600 hover:bg-green-700 transition-colors duration-350 cursor-pointer text-xl font-semibold"
             >
-              Chơi ngay
+              {gameStarted ? "Chơi lại" : "Chơi ngay"}
             </button>
           </div>
         </div>
