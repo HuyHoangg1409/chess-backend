@@ -36,9 +36,28 @@ def minimax(
         return min_evaluation
 
 
+def prefer_move(board, move):
+    if move.promotion:
+        return 900
+
+    if board.is_capture(move):
+        victim = board.piece_at(move.to_square)
+        attacker = board.piece_at(move.from_square)
+        if victim and attacker:
+            return 100*victim.piece_type - attacker.piece_type
+
+    if board.gives_check(move):
+        return 50
+
+    return 0
+
+
 def get_minimax_move(board: chess.Board, depth: int = 3):
     if not board.legal_moves:
         return None
+
+    moves = list(board.legal_moves)
+    moves.sort(key= lambda m: prefer_move(board, m), reverse=True)
 
     is_maximizing = board.turn == chess.WHITE
     best_move = None
@@ -47,7 +66,7 @@ def get_minimax_move(board: chess.Board, depth: int = 3):
 
     if is_maximizing:
         best_value = -float("inf")
-        for move in board.legal_moves:
+        for move in moves:
             board.push(move)
             value = minimax(board, depth - 1, alpha, beta, False)
             board.pop()
@@ -59,7 +78,7 @@ def get_minimax_move(board: chess.Board, depth: int = 3):
             alpha = max(alpha, best_value)
     else:
         best_value = float("inf")
-        for move in board.legal_moves:
+        for move in moves:
             board.push(move)
             value = minimax(board, depth - 1, alpha, beta, True)
             board.pop()

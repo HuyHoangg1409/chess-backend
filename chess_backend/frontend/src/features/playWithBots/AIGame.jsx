@@ -9,7 +9,7 @@ export default function AIGame({ currentUser }) {
   const [game, setGame] = useState(new Chess());
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [message, setMessage] = useState("");
-  const [difficulty, setDifficulty] = useState(null);
+  const [difficulty, setDifficulty] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [selectedColor, setSelectedColor] = useState("white");
@@ -33,6 +33,7 @@ export default function AIGame({ currentUser }) {
   const handleGameResign = () => {
     playSound("game_end");
     setIsCompleted(true);
+    setIsAIThinking(false);
     setGameStarted(false);
     setMessage("Bot wins");
   };
@@ -62,6 +63,16 @@ export default function AIGame({ currentUser }) {
     } else playSound("move");
 
     setGame(newGame);
+    if (newGame.isGameOver()) {
+      if (newGame.isDraw()) {
+        playSound("game_end");
+        setMessage("Draw");
+      } else {
+        handleGameResign();
+      }
+      return;
+    }
+
     setIsAIThinking(false);
     setMessage("Player turn...");
   };
@@ -70,8 +81,7 @@ export default function AIGame({ currentUser }) {
     const playerColor = selectedColor === "white" ? "w" : "b";
     if (isAIThinking || game.turn() !== playerColor) return false;
     if (isCompleted) {
-      playSound("game_end");
-      setMessage("Bot Wins");
+      handleGameResign();
       return false;
     }
 
@@ -98,10 +108,15 @@ export default function AIGame({ currentUser }) {
       if (!newGame.isGameOver()) {
         setTimeout(() => fetchAITurn(newGame), 400);
       } else {
-        playSound("correct");
+        if (newGame.isDraw()) {
+          playSound("game_end");
+          setMessage("Draw");
+        } else {
+          playSound("correct");
+          setMessage("Player Wins");
+        }
         setIsCompleted(true);
         setGameStarted(false);
-        setMessage("Player Wins");
       }
 
       return true;
