@@ -6,7 +6,7 @@ from .openings import get_opening_move
 
 transposition_table = {}
 MAX_TRANSPOSITION_TABLE_SIZE = 50000
-TIME_LIMIT = 5.0
+TIME_LIMIT = 3.0
 
 
 def save_to_transposition_table(board_hash, depth, score):

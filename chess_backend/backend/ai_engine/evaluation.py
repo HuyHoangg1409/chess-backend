@@ -159,7 +159,7 @@ def evaluation_rooks(board: chess.Board) -> int:
     all_pawns = board.pieces(chess.PAWN, chess.WHITE) | board.pieces(chess.PAWN, chess.BLACK)
 
     for color in [chess.WHITE, chess.BLACK]:
-        mult = 1 if chess.WHITE else -1
+        mult = 1 if color == chess.WHITE else -1
         ally_pawns = board.pieces(chess.PAWN, color)
 
         for square in board.pieces(chess.ROOK, color):
@@ -220,7 +220,8 @@ def evaluation(board: chess.Board) -> int:
         int: Điểm tổng cộng của bàn cờ. Điểm dương có lợi cho quân trắng, điểm âm có lợi cho quân đen
     """
     if board.is_checkmate():
-        return 20000 if board.turn == chess.WHITE else -20000
+        return -20000 if board.turn == chess.WHITE else 20000
+
     if (
         board.is_stalemate()
         or board.is_insufficient_material()
@@ -255,18 +256,16 @@ def evaluation(board: chess.Board) -> int:
             file = chess.square_file(square)
 
             pst_index = (
-                (7 - rank) * 8 + file if board.turn == chess.WHITE else rank * 8 + file
+                (7 - rank) * 8 + file if piece.color == chess.WHITE else rank * 8 + file
             )
             pst_value = table[pst_index]
 
-            piece_score = score + pst_value
-
             if piece.color == chess.WHITE:
-                white_material += piece_score
-                pst_score += piece_score
+                white_material += score
+                pst_score += pst_value
             else:
-                black_material += piece_score
-                pst_score -= piece_score
+                black_material += score
+                pst_score -= pst_value
 
     if len(board.pieces(chess.BISHOP, chess.WHITE)) >= 2:
         pst_score += 35
