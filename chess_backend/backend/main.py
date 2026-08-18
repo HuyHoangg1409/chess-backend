@@ -546,14 +546,13 @@ def get_ai_move(
         dict: Trả về "best_move" là nước đi tốt nhất của thuật toán
     """
     board = chess.Board(gameState.fen)
-    print(gameState.fen)
 
     if gameState.difficult == 1:
         move = get_greedy_move(board)
     elif gameState.difficult == 2:
-        move = get_minimax_move(board, 3)
+        move = get_minimax_move(board, 2)
     else:
-        move = get_minimax_move(board, 5)
+        move = get_minimax_move(board, 4)
 
     if move is None:
         return {"best_move": None}
