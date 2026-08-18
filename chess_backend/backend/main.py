@@ -550,9 +550,9 @@ def get_ai_move(
     if gameState.difficult == 1:
         move = get_greedy_move(board)
     elif gameState.difficult == 2:
-        move = get_minimax_move(board, 2)
-    else:
         move = get_minimax_move(board, 4)
+    else:
+        move = get_minimax_move(board, 5)
 
     if move is None:
         return {"best_move": None}

@@ -1,6 +1,19 @@
 import chess
+import chess.polyglot
+import time
 from .evaluation import evaluation
 from .openings import get_opening_move
+
+transposition_table = {}
+MAX_TRANSPOSITION_TABLE_SIZE = 50000
+TIME_LIMIT = 5.0
+
+
+def save_to_transposition_table(board_hash, depth, score):
+    """Tự động đẩy thế cờ cũ nhất ra nếu cache đầy"""
+    if len(transposition_table) >= MAX_TRANSPOSITION_TABLE_SIZE:
+        del transposition_table[next(iter(transposition_table))]
+    transposition_table[board_hash] = (depth, score)
 
 
 def prefer_move(board, move):
@@ -24,7 +37,7 @@ def prefer_move(board, move):
         return 100
 
     if board.gives_check(move):
-        return 50
+        return 10
 
     return 0
 
@@ -54,7 +67,7 @@ def quiescence(board, alpha, beta, is_maximizing, q_depth=0, max_q_depth=3):
         if stand_pat > alpha:
             alpha = stand_pat
 
-        captures = [m for m in board.legal_moves if board.is_capture(m) or m.promotion]
+        captures = list(board.generate_legal_captures())
         captures.sort(key=lambda m: prefer_move(board, m), reverse=True)
 
         for move in captures:
@@ -76,7 +89,7 @@ def quiescence(board, alpha, beta, is_maximizing, q_depth=0, max_q_depth=3):
         if stand_pat < beta:
             beta = stand_pat
 
-        captures = [m for m in board.legal_moves if board.is_capture(m) or m.promotion]
+        captures = list(board.generate_legal_captures())
         captures.sort(key=lambda m: prefer_move(board, m), reverse=True)
 
         for move in captures:
@@ -109,14 +122,20 @@ def minimax(
     Returns:
         float: Điểm số đánh giá của trạng thái bàn cờ hiện tại sau khi duyệt độ sâu
     """
-    if board.is_checkmate():
-        return -20000 - depth if board.turn == chess.WHITE else 20000 + depth
-    if board.is_game_over():
-        return 0
+    board_hash = chess.polyglot.zobrist_hash(board)
+    if board_hash in transposition_table:
+        cached_depth, cached_score = transposition_table[board_hash]
+        if cached_depth >= depth:
+            return cached_score
+
     if depth == 0:
         return quiescence(board, alpha, beta, is_maximizing)
 
     moves = list(board.legal_moves)
+    if not moves:
+        if board.is_check():
+            return -20000 - depth if is_maximizing else 20000 + depth
+        return 0
     moves.sort(key=lambda m: prefer_move(board, m), reverse=True)
 
     if is_maximizing:
@@ -129,6 +148,8 @@ def minimax(
             alpha = max(alpha, evaluation_score)
             if beta <= alpha:
                 break
+
+        save_to_transposition_table(board_hash, depth, max_evaluation)
         return max_evaluation
     else:
         min_evaluation = float("inf")
@@ -140,6 +161,8 @@ def minimax(
             beta = min(beta, evaluation_score)
             if beta <= alpha:
                 break
+
+        save_to_transposition_table(board_hash, depth, min_evaluation)
         return min_evaluation
 
 
@@ -159,39 +182,59 @@ def get_minimax_move(board: chess.Board, depth: int = 3):
     opening_moves = get_opening_move(board)
     if opening_moves:
         print("work")
+        time.sleep(1.5)
         return opening_moves
 
-    moves = list(board.legal_moves)
-    moves.sort(key=lambda m: prefer_move(board, m), reverse=True)
+    transposition_table.clear()
 
-    is_maximizing = board.turn == chess.WHITE
-    best_move = None
-    alpha = -float("inf")
-    beta = float("inf")
+    start_time = time.perf_counter()
+    best_move_overall = list(board.legal_moves)[0]
 
-    if is_maximizing:
-        best_value = -float("inf")
-        for move in moves:
-            board.push(move)
-            value = minimax(board, depth - 1, alpha, beta, False)
-            board.pop()
+    for current_depth in range(1, depth + 1):
+        moves = list(board.legal_moves)
+        moves.sort(
+            key=lambda m: (m == best_move_overall, prefer_move(board, m)), reverse=True
+        )
 
-            if value > best_value:
-                best_value = value
-                best_move = move
+        is_maximizing = board.turn == chess.WHITE
+        best_move = moves[0]
+        alpha = -float("inf")
+        beta = float("inf")
 
-            alpha = max(alpha, best_value)
-    else:
-        best_value = float("inf")
-        for move in moves:
-            board.push(move)
-            value = minimax(board, depth - 1, alpha, beta, True)
-            board.pop()
+        if is_maximizing:
+            best_value = -float("inf")
+            for move in moves:
+                if time.perf_counter() - start_time > TIME_LIMIT:
+                    break
 
-            if value < best_value:
-                best_value = value
-                best_move = move
+                board.push(move)
+                value = minimax(board, current_depth - 1, alpha, beta, False)
+                board.pop()
 
-            beta = min(beta, best_value)
+                if value > best_value:
+                    best_value = value
+                    best_move = move
 
-    return best_move
+                alpha = max(alpha, best_value)
+        else:
+            best_value = float("inf")
+            for move in moves:
+                if time.perf_counter() - start_time > TIME_LIMIT:
+                    break
+
+                board.push(move)
+                value = minimax(board, current_depth - 1, alpha, beta, True)
+                board.pop()
+
+                if value < best_value:
+                    best_value = value
+                    best_move = move
+
+                beta = min(beta, best_value)
+
+        if time.perf_counter() - start_time <= TIME_LIMIT:
+            best_move_overall = best_move
+        else:
+            break
+
+    return best_move_overall
