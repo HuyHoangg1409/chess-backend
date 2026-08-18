@@ -113,6 +113,103 @@ def isEndgame(board):
     return queens == 0 or (queens <= 2 and minors <= 2)
 
 
+def evaluation_pawn(board: chess.Board) -> int:
+    """Đánh giá điểm phụ dựa trên vị trí của quân tốt.
+    Kiểm tra tốt chồng và tốt lẻ.
+
+    Args:
+        board (chess.Board): Đối tượng bàn cờ hiện tại
+
+    Returns:
+        int: Điểm đánh giá sau khi xem xét vị trí các quân tốt
+    """
+    score = 0
+    for color in [chess.WHITE, chess.BLACK]:
+        mult = 1 if color == chess.WHITE else -1
+        pawn_squares = board.pieces(chess.PAWN, color)
+
+        file_counts = [0]*8
+        for square in pawn_squares:
+            file_counts[chess.square_file(square)] += 1
+
+        for f in range(8):
+            if file_counts[f] > 1:
+                score -= (file_counts[f] - 1) * 20 * mult
+
+            if file_counts[f] > 0:
+                has_left = file_counts[f-1] > 0 if f > 0 else False
+                has_right = file_counts[f+1] > 0 if f < 7 else False
+                if not has_left and not has_right:
+                    score -= 15 * mult
+
+    return score
+
+
+def evaluation_rooks(board: chess.Board) -> int:
+    """Đánh giá điểm phụ dựa trên vị trí của quân xe.
+    Kiểm tra xe cột mở và nửa mở, xe nằm ở hàng gần rìa bàn cờ.
+
+    Args:
+        board (chess.Board): Đối tượng bàn cờ hiện tại
+
+    Returns:
+        int: Điểm đánh giá sau khi xem xét vị trí các quân xe
+    """
+    score = 0
+    all_pawns = board.pieces(chess.PAWN, chess.WHITE) | board.pieces(chess.PAWN, chess.BLACK)
+
+    for color in [chess.WHITE, chess.BLACK]:
+        mult = 1 if chess.WHITE else -1
+        ally_pawns = board.pieces(chess.PAWN, color)
+
+        for square in board.pieces(chess.ROOK, color):
+            file = chess.square_file(square)
+            rank = chess.square_rank(square)
+
+            if (color == chess.WHITE and rank == 6) or (color == chess.BLACK and rank == 1):
+                score += 25 * mult
+
+            pawns_on_file = [p for p in all_pawns if chess.square_file(p) == file]
+            if not pawns_on_file:
+                score += 25 * mult
+            else:
+                ally_file = [p for p in all_pawns if chess.square_file(p) == file]
+                if not ally_file:
+                    score += 15 * mult
+
+    return score
+
+
+def evaluate_king(board: chess.Board) -> int:
+    """Đánh giá điểm phụ dựa trên vị trí của quân vua.
+    Kiểm tra vua đã nằm trong vị trí an toàn hay còn quyền nhập thành không.
+
+    Args:
+        board (chess.Board): Đối tượng bàn cờ hiện tại
+
+    Returns:
+        int: Điểm đánh giá sau khi xem xét vị trí vua
+    """
+    if isEndgame(board):
+        return 0
+
+    score = 0
+    for color in [chess.WHITE, chess.BLACK]:
+        mult = 1 if color == chess.WHITE else -1
+        king_square = board.king(color)
+
+        if color == chess.WHITE and king_square in [chess.G1, chess.C1]:
+            score += 40 * mult
+        elif color == chess.BLACK and king_square in [chess.G8, chess.C8]:
+            score += 40 * mult
+
+        has_castling = board.has_kingside_castling_rights(color) or board.has_queenside_castling_rights(color)
+        if not has_castling and king_square not in [chess.G1, chess.C1, chess.G8, chess.C8]:
+            score -= 50 * mult
+
+    return score
+
+
 def evaluation(board: chess.Board) -> int:
     """Đánh giá trạng thái hiện tại của thế cờ dựa trên giá trị và vị trí của các quân cờ.
 
@@ -133,7 +230,9 @@ def evaluation(board: chess.Board) -> int:
         return 0
 
     endgame = isEndgame(board)
-    total_score = 0
+    white_material = 0
+    black_material = 0
+    pst_score = 0
     for square in chess.SQUARES:
         piece = board.piece_at(square)
         if piece is not None:
@@ -163,7 +262,33 @@ def evaluation(board: chess.Board) -> int:
             piece_score = score + pst_value
 
             if piece.color == chess.WHITE:
-                total_score += piece_score
+                white_material += piece_score
+                pst_score += piece_score
             else:
-                total_score -= piece_score
-    return total_score
+                black_material += piece_score
+                pst_score -= piece_score
+
+    if len(board.pieces(chess.BISHOP, chess.WHITE)) >= 2:
+        pst_score += 35
+    if len(board.pieces(chess.BISHOP, chess.BLACK)) >= 2:
+        pst_score -= 35
+
+    material_diff = white_material - black_material
+
+    total_major_minor = (
+        len(board.pieces(chess.QUEEN, chess.WHITE))
+        + len(board.pieces(chess.QUEEN, chess.BLACK))
+        + len(board.pieces(chess.ROOK, chess.WHITE))
+        + len(board.pieces(chess.ROOK, chess.BLACK))
+        + len(board.pieces(chess.BISHOP, chess.WHITE))
+        + len(board.pieces(chess.BISHOP, chess.BLACK))
+        + len(board.pieces(chess.KNIGHT, chess.WHITE))
+        + len(board.pieces(chess.KNIGHT, chess.BLACK))
+    )
+    pieces_traded = 14 - total_major_minor
+
+    if material_diff > 150:
+        material_diff += pieces_traded * 15
+    elif material_diff < -150:
+        material_diff -= pieces_traded * 15
+    return pst_score + material_diff + evaluation_pawn(board) + evaluation_rooks(board) + evaluate_king(board)
