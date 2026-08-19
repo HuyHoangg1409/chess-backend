@@ -9,6 +9,7 @@ import PuzzleGame from "./features/puzzle/PuzzleGame";
 import AIGame from "./features/playWithBots/AIGame";
 import Register from "./components/Register";
 import Auth from "./components/Auth";
+import RealGame from "./features/playWithPeople/RealGame";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token"));
@@ -96,6 +97,7 @@ function App() {
               />
             )}
             {currentMode == "ai" && <AIGame currentUser={currentUser} />}
+            {currentMode == "real-time" && <RealGame currentUser={currentUser} />}
           </main>
         </div>
       </div>

@@ -3,6 +3,7 @@ import React from "react";
 const MENU_ITEMS = [
   { id: "puzzle", label: "Giải đố" },
   { id: "ai", label: "Chơi với máy" },
+  { id: "real-time", label: "Chơi với người"}
 ];
 
 export default function Sidebar({ currentUser, currentMode, onSelectMode, onLogout }) {
