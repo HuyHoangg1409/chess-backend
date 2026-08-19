@@ -12,7 +12,7 @@ export default function MoveHistoryTable({ history = [] }) {
   }, [history]);
 
   return (
-    <div className="flex flex-col h-55">
+    <div className="flex flex-col h-80">
       <div className="grid grid-cols-12 px-4 py-2.5 border-b border-chess-border text-sm font-bold text-text-white uppercase tracking-wider">
         <span className="col-span-2"></span>
         <span className="col-span-5 flex items-center gap-1.5">
@@ -35,9 +35,8 @@ export default function MoveHistoryTable({ history = [] }) {
           return (
             <div
               key={index}
-              className={`grid grid-cols-12 items-center px-4 py-1.5 font-semibold text-xs text-white transition-colors ${
-                index % 2 == 0 ? "bg-[#262522]" : "bg-[#21201d]"
-              }`}
+              className={`grid grid-cols-12 items-center px-4 py-1.5 font-semibold text-xs text-white transition-colors ${index % 2 == 0 ? "bg-[#262522]" : "bg-[#21201d]"
+                }`}
             >
               <span className="col-span-2">{pair.moveNumber}</span>
               <div className="col-span-5">
