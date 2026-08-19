@@ -114,7 +114,7 @@ export const getHelp = async (puzzle_id, moveIndex, token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "message"
  */
 export const addPuzzleHistory = async (puzzle_id, status, token) => {
-  return await request("/history/add", {
+  return await request("/puzzles/history/add", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
