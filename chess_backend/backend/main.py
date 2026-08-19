@@ -11,6 +11,7 @@ import backend.models as models
 import backend.schemas as schemas
 from backend.ai_engine.greedy import get_greedy_move
 from backend.ai_engine.minimax import get_minimax_move
+from backend.ai_engine.stockfish_engine import get_stockfish_move
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -551,8 +552,10 @@ def get_ai_move(
         move = get_greedy_move(board)
     elif gameState.difficult == 2:
         move = get_minimax_move(board, 4)
-    else:
+    elif gameState.difficult == 3:
         move = get_minimax_move(board, 5)
+    else:
+        move = get_stockfish_move(board, 1.5, 12)
 
     if move is None:
         return {"best_move": None}
