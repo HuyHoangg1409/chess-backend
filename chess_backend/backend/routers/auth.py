@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from ..schemas import UserResponse, UserCreate
 from ..database import get_db
 from ..dependencies import get_current_user
+from ..models import User
+from ..secure import hash_password, verify_password, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -27,16 +29,16 @@ def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
         dict: Trả về thông tin tài khoản vừa đăng ký tài khoản thành công không bao gồm mật khẩu
     """
     existing_user = (
-        db.query(models.User).filter(models.User.username == user_data.username).first()
+        db.query(User).filter(User.username == user_data.username).first()
     )
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Tên đăng nhập đã tồn tại"
         )
 
-    hashed_password = secure.hash_password(user_data.password)
+    hashed_password = hash_password(user_data.password)
 
-    new_user = models.User(username=user_data.username, password_hash=hashed_password)
+    new_user = User(username=user_data.username, password_hash=hashed_password)
 
     db.add(new_user)
     db.commit()
@@ -61,19 +63,19 @@ def login(user_data: UserCreate, db: Session = Depends(get_db)):
         dict: Trả về Access Token và bearer nếu đăng nhập thành công
     """
     user = (
-        db.query(models.User).filter(models.User.username == user_data.username).first()
+        db.query(User).filter(User.username == user_data.username).first()
     )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Không tồn tại tài khoản"
         )
 
-    if not secure.verify_password(user_data.password, user.password_hash):  # type: ignore
+    if not verify_password(user_data.password, user.password_hash):  # type: ignore
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Mật khẩu sai"
         )
 
-    access_token = secure.create_access_token(
+    access_token = create_access_token(
         data={"sub": user.username, "user_id": user.user_id}
     )
 
@@ -98,7 +100,7 @@ def get_my_information(
     """
     user_id = current_user.get("user_id")
 
-    db_user = db.query(models.User).filter(user_id == models.User.user_id).first()
+    db_user = db.query(User).filter(user_id == User.user_id).first()
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"

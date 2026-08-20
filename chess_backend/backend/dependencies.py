@@ -2,6 +2,8 @@ import backend.secure
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader
 
+from backend.secure import get_user_from_token
+
 oauth2_scheme = APIKeyHeader(name="Authorization", auto_error=False)
 
 
@@ -26,7 +28,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     if token.lower().startswith("bearer "):
         token = token[7:]
 
-    user_info = secure.get_user_from_token(token)
+    user_info = get_user_from_token(token)
 
     if not user_info:
         raise HTTPException(
