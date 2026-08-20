@@ -44,7 +44,7 @@ export const getPuzzleById = async (puzzleId) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi đăng nhập thành công bao gồm "access_token" và "token_type"
  */
 export const sendLoginRequest = async (userData) => {
-  return await request("/login", {
+  return await request("/auth/login", {
     method: "POST",
     body: JSON.stringify(userData),
   });
@@ -56,7 +56,7 @@ export const sendLoginRequest = async (userData) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server khi đăng ký thành công bao gồm "user_id", "username" và "elo_rating"
  */
 export const sendRegisterRequest = async (userData) => {
-  return await request("/register", {
+  return await request("/auth/register", {
     method: "POST",
     body: JSON.stringify(userData),
   });
