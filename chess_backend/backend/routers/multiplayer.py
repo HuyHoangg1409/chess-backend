@@ -10,7 +10,7 @@ router = APIRouter(prefix="/ws", tags=["Multiplayer"])
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     await websocket.accept()
 
-    if room_id not in room:
+    if room_id not in rooms:
         rooms[room_id] = chessRoom(room_id)
     room = rooms[room_id]
 
@@ -52,6 +52,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 current_turn = "white" if room.board.turn == chess.WHITE else "black"
                 if player_color == current_turn and move in room.board.legal_moves:
                     room.board.push(move)
+                    is_over = room.board.is_game_over()
+                    game_result = room.board.result() if is_over else None
 
                     await room.broadcast(
                         {
@@ -61,6 +63,9 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                             "turn": (
                                 "white" if room.board.turn == chess.WHITE else "black"
                             ),
+                            "is_captured": room.board.is_capture(move),
+                            "is_over": is_over,
+                            "result": game_result,
                         }
                     )
     except WebSocketDisconnect:

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, act } from "react";
 import { Chess } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
 import MoveHistoryTable from "../../components/MoveHistoryTable";
@@ -8,17 +8,17 @@ import { getCapturedPieces, getPieceValue } from "../../utils/chessHelper";
 export default function RealGame({ currentUser }) {
   const [game, setGame] = useState(new Chess());
   const [roomIdInput, setRoomIdInput] = useState("");
-  const [createRoomIdInput, setCreateRoomIdInput] = useState("");
   const [currentRoom, setCurrentRoom] = useState(null);
   const [isInRoom, setIsInRoom] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [actualColor, setActualColor] = useState("white");
   const [message, setMessage] = useState("Nhập mã phòng để bắt đầu");
-  const [copied, setCopied] = useState(false);
 
   const [playerTime, setPlayerTime] = useState(600);
   const [opponentTime, setOpponentTime] = useState(600);
+
+  const wsRef = useRef(null);
 
   /**
    * Định dạng thời gian hiển thị (MM:SS)
@@ -29,35 +29,170 @@ export default function RealGame({ currentUser }) {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleJoinRoom = () => {
+  const connectWebsocket = (targetRoomId) => {
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
 
-  }
+    const backendBaseURL =
+      import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
+    const wsBaseURL = backendBaseURL
+      .replace(/^http:/, "ws:")
+      .replace(/^https:/, "wss:");
+
+    const wsURL = `${wsBaseURL}/ws/${targetRoomId}`;
+    const ws = new WebSocket(wsURL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setCurrentRoom(targetRoomId);
+      setIsInRoom(true);
+      setMessage("Đang chờ đối thủ...");
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      switch (data.type) {
+        case "init": {
+          setActualColor(data.color);
+          if (data.fen) {
+            const loadedGame = new Chess(data.fen);
+            setGame(loadedGame);
+          }
+          break;
+        }
+
+        case "start": {
+          playSound("game_start");
+          const startedGame = new Chess(data.fen) || undefined;
+          setGame(startedGame);
+          setGameStarted(true);
+          setIsCompleted(false);
+          setPlayerTime(600);
+          setOpponentTime(600);
+          const playerTurn =
+            data.turn === (actualColor === "white" ? "white" : "black");
+          setMessage(
+            playerTurn
+              ? "Trận đấu bắt đầu! Lượt của bạn"
+              : "Trận đấu bắt đầu! Lượt của đối thủ",
+          );
+        }
+
+        case "move": {
+          const newGame = new Chess();
+          newGame.load(data.fen);
+          setGame(newGame);
+
+          if (newGame.inCheck()) {
+            playSound("check");
+          } else if (data.is_capture) {
+            playSound("capture");
+          } else {
+            playSound("move");
+          }
+
+          if (data.is_over) {
+            playSound("game_end");
+            setIsCompleted(true);
+            setGameStarted(false);
+            setMessage(data.result || "Trận đấu kết thúc!");
+          } else {
+            const playerTurn = actualColor === "white" ? "w" : "b";
+            setMessage(
+              newGame.turn() === playerTurn
+                ? "Lượt của bạn"
+                : "Lượt của đối thủ",
+            );
+          }
+          break;
+        }
+
+        case "player_left": {
+          playSound("game_end");
+          setGameStarted(false);
+          setIsCompleted(true);
+          setMessage(data.message);
+          break;
+        }
+
+        case "error": {
+          alert(data.message());
+          handleLeaveRoom();
+          break;
+        }
+
+        default:
+          break;
+      }
+    };
+
+    ws.onclose = () => {
+      // setIsInRoom(false);
+      // setGameStarted(false);
+    };
+
+    ws.onerror = (error) => {
+      console.error(error);
+      setMessage("Không thể kết nối tới server");
+    };
+  };
 
   const handleLeaveRoom = () => {
-    
-  }
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setIsInRoom(false);
+    setGameStarted(false);
+    setIsCompleted(false);
+    setCurrentRoom(null);
+    setGame(new Chess());
+    setRoomIdInput("");
+    setMessage("Nhập mã phòng để bắt đầu");
+  };
 
   const handleCreateRoom = () => {
+    const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    setRoomIdInput(randomCode);
+    setMessage("Đã tạo mã. Bấm vào phòng để đợi đối thủ");
+    // connectWebsocket(randomCode)
+  };
 
-  }
+  const handleJoinRoom = () => {
+    const targetId = roomIdInput.trim().toUpperCase();
+    if (!targetId) {
+      setMessage("Vui lòng nhập hoặc tạo mã phòng trước!");
+      return;
+    }
+    connectWebsocket(targetId);
+  };
 
-  const handleCopyRoomCode = () => {
-
-  }
-
-  /**
-   * Khởi tạo và thiết lập bàn cờ mới khi ván đấu chính thức bắt đầu.
-   * Xử lý gán màu quân nếu chọn Random, reset thời gian đếm ngược và thông báo lượt đi đầu tiên.
-   */
+  // const handleCopyRoomCode = () => {}
   const handleStartGame = () => {
     playSound("game_start");
     const newGame = new Chess();
     setGame(newGame);
     setIsCompleted(false);
     setGameStarted(true);
-    setPlayerTime(600);
-    setOpponentTime(600);
-    setMessage(newGame.turn() === (actualColor === "white" ? "w" : "b") ? "Lượt của bạn" : "Lượt của đối thủ");
+
+    let assignedColor = selectedColor;
+    if (selectedColor === "random") {
+      assignedColor = Math.random() < 0.5 ? "white" : "black";
+    }
+    const selectedTime =
+      TIME_CONTROLS.find((t) => t.id === timeControl)?.initialSeconds || 600;
+    setActualColor(assignedColor);
+    setPlayerTime(selectedTime);
+    setOpponentTime(selectedTime);
+
+    setMessage(
+      newGame.turn() === (assignedColor === "white" ? "w" : "b")
+        ? "Lượt của bạn"
+        : "Lượt của đối thủ",
+    );
   };
 
   /**
@@ -76,13 +211,16 @@ export default function RealGame({ currentUser }) {
   const handlePieceDrop = (pieceObject) => {
     if (!gameStarted || isCompleted) return false;
 
+    const isMyTurn = game.turn() === (actualColor === "white" ? "w" : "b");
+    if (!isMyTurn) return false;
+
     try {
       const newGame = new Chess();
       newGame.loadPgn(game.pgn());
       const move = newGame.move({
         from: pieceObject.sourceSquare,
         to: pieceObject.targetSquare,
-        promotion: "q",
+        promotion: pieceObject.promotion || "q",
       });
 
       if (!move) return false;
@@ -97,19 +235,14 @@ export default function RealGame({ currentUser }) {
 
       setGame(newGame);
 
-      if (newGame.isGameOver()) {
-        playSound("game_end");
-        setIsCompleted(true);
-        setGameStarted(false);
-        if (newGame.isDraw()) {
-          setMessage("Hòa cờ!");
-        } else {
-          const winner = newGame.turn() === "b" ? "Trắng thắng" : "Đen thắng";
-          setMessage(`Chiếu bí! ${winner}`);
-        }
-      } else {
-        const playerTurnColor = actualColor === "white" ? "w" : "b";
-        setMessage(newGame.turn() === playerTurnColor ? "Lượt của bạn" : "Lượt của đối thủ");
+      const uciMove = `${pieceObject.sourceSquare}${pieceObject.targetSquare}${move.promotion ? move.promotion : ""}`;
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "move",
+            move: uciMove,
+          }),
+        );
       }
 
       return true;
@@ -125,8 +258,14 @@ export default function RealGame({ currentUser }) {
   const playerCaptured = actualColor === "white" ? captured.b : captured.w;
   const opponentCaptured = actualColor === "white" ? captured.w : captured.b;
 
-  const playerCapturedValue = playerCaptured.reduce((sum, piece) => sum + getPieceValue(piece), 0);
-  const opponentCapturedValue = opponentCaptured.reduce((sum, piece) => sum + getPieceValue(piece), 0);
+  const playerCapturedValue = playerCaptured.reduce(
+    (sum, piece) => sum + getPieceValue(piece),
+    0,
+  );
+  const opponentCapturedValue = opponentCaptured.reduce(
+    (sum, piece) => sum + getPieceValue(piece),
+    0,
+  );
 
   const playerAdvantage = playerCapturedValue - opponentCapturedValue;
   const opponentAdvantage = opponentCapturedValue - playerCapturedValue;
@@ -149,7 +288,9 @@ export default function RealGame({ currentUser }) {
                     : "Đang chờ đối thủ..."
                   : "Đối thủ"}
               </span>
-              <span className="text-xs text-stone-500 font-normal font-mono">1200 ELO</span>
+              <span className="text-xs text-stone-500 font-normal font-mono">
+                1200 ELO
+              </span>
             </div>
           </div>
 
@@ -167,7 +308,9 @@ export default function RealGame({ currentUser }) {
                   ))}
                 </div>
                 {opponentAdvantage > 0 && (
-                  <span className="ml-1 text-xs font-bold text-green-600">+{opponentAdvantage}</span>
+                  <span className="ml-1 text-xs font-bold text-green-600">
+                    +{opponentAdvantage}
+                  </span>
                 )}
               </div>
             )}
@@ -184,19 +327,29 @@ export default function RealGame({ currentUser }) {
           game={game}
           onPieceDrop={handlePieceDrop}
           boardOrientation={actualColor}
-          allowDragging={gameStarted && !isCompleted}
+          allowDragging={
+            gameStarted &&
+            !isCompleted &&
+            game.turn() === (actualColor === "white" ? "w" : "b")
+          }
         />
 
         {/* Thanh thông tin người chơi (dưới) */}
         <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10">
           <div className="flex items-center gap-3">
             <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white text-sm shadow-md">
-              {currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : "U"}
+              {currentUser?.username
+                ? currentUser.username.charAt(0).toUpperCase()
+                : "U"}
             </div>
             <div className="flex flex-col">
-              <span className="text-stone-100 font-bold">{currentUser?.username || "Bạn"}</span>
+              <span className="text-stone-100 font-bold">
+                {currentUser?.username || "Bạn"}
+              </span>
               <span className="text-xs text-stone-500 font-normal font-mono">
-                {currentUser?.elo_rating ? `${currentUser.elo_rating} ELO` : "1200 ELO"}
+                {currentUser?.elo_rating
+                  ? `${currentUser.elo_rating} ELO`
+                  : "1200 ELO"}
               </span>
             </div>
           </div>
@@ -215,7 +368,9 @@ export default function RealGame({ currentUser }) {
                   ))}
                 </div>
                 {playerAdvantage > 0 && (
-                  <span className="ml-1 text-xs font-bold text-green-600">+{playerAdvantage}</span>
+                  <span className="ml-1 text-xs font-bold text-green-600">
+                    +{playerAdvantage}
+                  </span>
                 )}
               </div>
             )}
@@ -232,12 +387,16 @@ export default function RealGame({ currentUser }) {
         {/* Header */}
         <div className="border-b border-chess-border pb-3">
           <div className="flex items-center justify-between">
-            <span className="text-base font-bold uppercase tracking-wider text-white">Chơi với người</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${
-              isInRoom
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                : "bg-stone-800 text-stone-400 border-stone-700"
-            }`}>
+            <span className="text-base font-bold uppercase tracking-wider text-white">
+              Chơi với người
+            </span>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${
+                isInRoom
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  : "bg-stone-800 text-stone-400 border-stone-700"
+              }`}
+            >
               {isInRoom ? "Đã vào phòng" : "Trực tuyến"}
             </span>
           </div>
@@ -246,7 +405,9 @@ export default function RealGame({ currentUser }) {
 
         {/* Thông báo trạng thái */}
         <div className="p-3 my-3 rounded-lg bg-button-bg-white text-gray-950 flex items-center justify-between shadow-md">
-          <span className="text-sm font-bold uppercase tracking-wide truncate">{message}</span>
+          <span className="text-sm font-bold uppercase tracking-wide truncate">
+            {message}
+          </span>
           {gameStarted && (
             <span className="w-2.5 h-2.5 rounded-full bg-green-600 animate-ping shrink-0 ml-2"></span>
           )}
@@ -260,29 +421,13 @@ export default function RealGame({ currentUser }) {
           {!isInRoom ? (
             /* Giao diện tạo/nhập mã phòng */
             <div className="flex flex-col gap-4">
-              <form onSubmit={(e) => { e.preventDefault(); handleCreateRoom(); }} className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
-                  Tạo phòng mới
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={createRoomIdInput}
-                    onChange={(e) => setCreateRoomIdInput(e.target.value)}
-                    placeholder="Nhập mã phòng muốn tạo..."
-                    className="flex-1 bg-[#1e1d1b] border border-stone-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 rounded-xl px-3 py-2 text-sm text-stone-100 placeholder-stone-500 focus:outline-none transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!createRoomIdInput.trim()}
-                    className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center shrink-0"
-                  >
-                    Tạo phòng
-                  </button>
-                </div>
-              </form>
-
-              <form onSubmit={(e) => { e.preventDefault(); handleJoinRoom(); }} className="flex flex-col gap-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleJoinRoom();
+                }}
+                className="flex flex-col gap-2"
+              >
                 <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
                   Vào phòng có sẵn
                 </label>
@@ -291,7 +436,7 @@ export default function RealGame({ currentUser }) {
                     type="text"
                     value={roomIdInput}
                     onChange={(e) => setRoomIdInput(e.target.value)}
-                    placeholder="Nhập mã phòng (vd: 1234)..."
+                    placeholder="Nhập mã phòng"
                     className="flex-1 bg-[#1e1d1b] border border-stone-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 rounded-xl px-3 py-2 text-sm text-stone-100 placeholder-stone-500 focus:outline-none transition-all"
                   />
                   <button
@@ -303,33 +448,31 @@ export default function RealGame({ currentUser }) {
                   </button>
                 </div>
               </form>
+
+              <button
+                type="button"
+                onClick={handleCreateRoom}
+                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
+              >
+                <span>Tạo phòng mới</span>
+              </button>
             </div>
           ) : (
             /* Giao diện khi đã vào phòng */
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between p-2.5 bg-[#1e1d1b] rounded-xl border border-stone-800">
                 <div className="flex flex-col">
-                  <span className="text-[11px] text-stone-400 uppercase font-semibold">Phòng hiện tại</span>
-                  <span className="text-sm font-bold font-mono text-emerald-400">{currentRoom}</span>
+                  <span className="text-[11px] text-stone-400 uppercase font-semibold">
+                    Phòng hiện tại
+                  </span>
+                  <span className="text-sm font-bold font-mono text-emerald-400">
+                    {currentRoom}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleCopyRoomCode}
-                  className="px-2.5 py-1 text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg border border-stone-700 transition-all cursor-pointer flex items-center gap-1"
-                >
-                  {copied ? "✓ Đã chép" : "📋 Sao chép"}
-                </button>
               </div>
 
               {!gameStarted ? (
                 <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={handleStartGame}
-                    className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-green-600 hover:bg-green-700 text-white transition-all cursor-pointer shadow-md"
-                  >
-                    Bắt đầu
-                  </button>
                   <button
                     type="button"
                     onClick={handleLeaveRoom}
