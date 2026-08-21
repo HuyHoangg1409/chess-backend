@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { formatMoveHistory } from "../utils/chessFormat";
 
-export default function MoveHistoryTable({ history = [] }) {
+export default function MoveHistoryTable({ history = [], className = "h-80" }) {
   const scrollRef = useRef(null);
   const movePairs = formatMoveHistory(history);
 
@@ -12,7 +12,7 @@ export default function MoveHistoryTable({ history = [] }) {
   }, [history]);
 
   return (
-    <div className="flex flex-col h-80">
+    <div className={`flex flex-col ${className}`}>
       <div className="grid grid-cols-12 px-4 py-2.5 border-b border-chess-border text-sm font-bold text-text-white uppercase tracking-wider">
         <span className="col-span-2"></span>
         <span className="col-span-5 flex items-center gap-1.5">
