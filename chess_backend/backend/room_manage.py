@@ -19,4 +19,4 @@ class chessRoom:
                     pass
 
 
-room: Dict[str, chessRoom] = {}
+rooms: Dict[str, chessRoom] = {}

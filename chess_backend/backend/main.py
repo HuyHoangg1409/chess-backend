@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import backend.database as database
 import backend.models as models
 
-from .routers import ai_game, puzzle_game, auth
+from .routers import ai_game, puzzle_game, auth, multiplayer
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -21,3 +21,4 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(puzzle_game.router)
 app.include_router(ai_game.router)
+app.include_router(multiplayer.router)

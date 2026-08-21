@@ -1,6 +1,7 @@
 import chess
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from ..schemas import (
     PuzzleResponse,
@@ -11,7 +12,8 @@ from ..schemas import (
     HelpRequest,
 )
 from ..database import get_db
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, calculate_new_elo
+from ..models import Puzzles, User, UserPuzzleHistory
 
 router = APIRouter(prefix="/puzzles", tags=["Puzzle Game"])
 
@@ -35,8 +37,8 @@ def create_puzzles(puzzle_data: PuzzleCreate, db: Session = Depends(get_db)):
         dict: Trả về thông tin puzzle được tạo thành công bao gồm "puzzle_id", "fen_position", "correct_moves" và "difficulty"
     """
     existing_puzzles = (
-        db.query(models.Puzzles)
-        .filter(models.Puzzles.fen_position == puzzle_data.fen_position)
+        db.query(Puzzles)
+        .filter(Puzzles.fen_position == puzzle_data.fen_position)
         .first()
     )
     if existing_puzzles:
@@ -44,7 +46,7 @@ def create_puzzles(puzzle_data: PuzzleCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST, detail="Đã tồn tại thế cờ này"
         )
 
-    new_puzzle = models.Puzzles(
+    new_puzzle = Puzzles(
         fen_position=puzzle_data.fen_position,
         correct_moves=puzzle_data.correct_moves,
         difficulty=puzzle_data.difficulty,
@@ -81,8 +83,8 @@ def random_puzzles_with_difficulty(
         dict: Trả về thông tin puzzle bao gồm "puzzle_id", "fen_position" và "difficulty" ngẫu nhiên với độ khó tương ứng
     """
     puzzle = (
-        db.query(models.Puzzles)
-        .filter(models.Puzzles.difficulty == difficulty)
+        db.query(Puzzles)
+        .filter(Puzzles.difficulty == difficulty)
         .order_by(func.random())
         .first()
     )
@@ -111,7 +113,7 @@ def random_puzzles_without_difficulty(db: Session = Depends(get_db)):
     Returns:
         dict: Trả về thông tin puzzle bao gồm "puzzle_id", "fen_position" và "difficulty" ngẫu nhiên với độ khó ngẫu nhiên
     """
-    puzzle = db.query(models.Puzzles).order_by(func.random()).first()
+    puzzle = db.query(Puzzles).order_by(func.random()).first()
 
     if not puzzle:
         raise HTTPException(
@@ -141,21 +143,13 @@ def get_puzzle_help(
     Returns:
         dict: Trả về dict bao gồm "hint" là nước đi chính xác mà người chơi cần
     """
-    db_user = (
-        db.query(models.User)
-        .filter(models.User.user_id == current_user.get("user_id"))
-        .first()
-    )
+    db_user = db.query(User).filter(User.user_id == current_user.get("user_id")).first()
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
         )
 
-    db_puzzle = (
-        db.query(models.Puzzles)
-        .filter(models.Puzzles.puzzle_id == request.puzzle_id)
-        .first()
-    )
+    db_puzzle = db.query(Puzzles).filter(Puzzles.puzzle_id == request.puzzle_id).first()
     if not db_puzzle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
@@ -199,21 +193,13 @@ def check_puzzle_answer(
         dict: Trả về kết quả từ database bao gồm "is_correct", "is_completed" và "message"
     """
     print(f"{current_user.get("sub")}, {current_user.get("user_id")}")
-    db_user = (
-        db.query(models.User)
-        .filter(models.User.username == current_user.get("sub"))
-        .first()
-    )
+    db_user = db.query(User).filter(User.username == current_user.get("sub")).first()
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
         )
 
-    puzzle = (
-        db.query(models.Puzzles)
-        .filter(models.Puzzles.puzzle_id == submission.puzzle_id)
-        .first()
-    )
+    puzzle = db.query(Puzzles).filter(Puzzles.puzzle_id == submission.puzzle_id).first()
     if not puzzle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
@@ -291,9 +277,7 @@ def get_puzzle_by_id(puzzle_id: int, db: Session = Depends(get_db)):
     Returns:
         dict: Trả về thông tin của 1 puzzle
     """
-    puzzle = (
-        db.query(models.Puzzles).filter(models.Puzzles.puzzle_id == puzzle_id).first()
-    )
+    puzzle = db.query(Puzzles).filter(Puzzles.puzzle_id == puzzle_id).first()
     if not puzzle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -323,21 +307,13 @@ def add_puzzle_history(
     Returns:
         dict: Trả về "message" thông báo lưu lịch sử thành công
     """
-    db_user = (
-        db.query(models.User)
-        .filter(models.User.user_id == current_user.get("user_id"))
-        .first()
-    )
+    db_user = db.query(User).filter(User.user_id == current_user.get("user_id")).first()
     if not db_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người chơi"
         )
 
-    db_puzzle = (
-        db.query(models.Puzzles)
-        .filter(models.Puzzles.puzzle_id == history.puzzle_id)
-        .first()
-    )
+    db_puzzle = db.query(Puzzles).filter(Puzzles.puzzle_id == history.puzzle_id).first()
     if not db_puzzle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
@@ -347,7 +323,7 @@ def add_puzzle_history(
         db_user.elo_rating, db_puzzle.rating, history.is_correct
     )
 
-    new_record = models.UserPuzzleHistory(
+    new_record = UserPuzzleHistory(
         user_id=db_user.user_id,
         puzzle_id=history.puzzle_id,
         is_correct=history.is_correct,
