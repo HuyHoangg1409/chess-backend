@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect, act } from "react";
+import React, { useState, useRef, useEffect, act, useCallback } from "react";
 import { Chess } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
 import MoveHistoryTable from "../../components/MoveHistoryTable";
 import { playSound } from "../../utils/sounds";
 import { getCapturedPieces, getPieceValue } from "../../utils/chessHelper";
+import { useChessTimer } from "../../hooks/useChessTimer";
 
 export default function RealGame({ currentUser }) {
   const [game, setGame] = useState(new Chess());
@@ -17,19 +18,7 @@ export default function RealGame({ currentUser }) {
 
   const [opponent, setOpponent] = useState(null);
 
-  const [playerTime, setPlayerTime] = useState(600);
-  const [opponentTime, setOpponentTime] = useState(600);
-
   const wsRef = useRef(null);
-
-  /**
-   * Định dạng thời gian hiển thị (MM:SS)
-   */
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const connectWebsocket = (targetRoomId) => {
     if (wsRef.current) {
@@ -73,8 +62,7 @@ export default function RealGame({ currentUser }) {
           setGame(startedGame);
           setGameStarted(true);
           setIsCompleted(false);
-          setPlayerTime(600);
-          setOpponentTime(600);
+          resetTimer(600);
           
           const amIWhite = data.white_player?.username === currentUser.username;
           const myColor = amIWhite ? "white" : "black";
@@ -180,6 +168,27 @@ export default function RealGame({ currentUser }) {
     }
     connectWebsocket(targetId);
   };
+
+  const handleTimeOut = useCallback((loser) => {
+    playSound("game_end");
+    setIsCompleted(true);
+    setGameStarted(false);
+    if (loser === "player") {
+      setMessage("Bạn đã hết giờ. Đối thủ thắng");
+    }
+    else {
+      setMessage("Đối thủ hết giờ. Bạn thắng")
+    }
+  }, []);
+
+  const {playerTime, opponentTime, formatTime, resetTimer} = useChessTimer({
+    initialTime: 600,
+    gameStarted,
+    isCompleted,
+    currentTurn: game.turn(),
+    playerColor: actualColor,
+    onTimeOut: handleTimeOut,
+  })
 
   // const handleCopyRoomCode = () => {}
   const handleStartGame = () => {
