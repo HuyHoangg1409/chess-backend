@@ -15,6 +15,8 @@ export default function RealGame({ currentUser }) {
   const [actualColor, setActualColor] = useState("white");
   const [message, setMessage] = useState("Nhập mã phòng để bắt đầu");
 
+  const [opponent, setOpponent] = useState(null);
+
   const [playerTime, setPlayerTime] = useState(600);
   const [opponentTime, setOpponentTime] = useState(600);
 
@@ -41,7 +43,8 @@ export default function RealGame({ currentUser }) {
       .replace(/^http:/, "ws:")
       .replace(/^https:/, "wss:");
 
-    const wsURL = `${wsBaseURL}/ws/${targetRoomId}`;
+    const token = localStorage.getItem("access_token");
+    const wsURL = `${wsBaseURL}/ws/${targetRoomId}?token=${token}`;
     const ws = new WebSocket(wsURL);
     wsRef.current = ws;
 
@@ -72,8 +75,15 @@ export default function RealGame({ currentUser }) {
           setIsCompleted(false);
           setPlayerTime(600);
           setOpponentTime(600);
+          
+          const amIWhite = data.white_player?.username === currentUser.username;
+          const myColor = amIWhite ? "white" : "black";
+          const opponentData = amIWhite ? data.black_player : data.white_player
           const playerTurn =
-            data.turn === (actualColor === "white" ? "white" : "black");
+          data.turn === (actualColor === "white" ? "white" : "black");
+          
+          // setActualColor(myColor)
+          setOpponent(opponentData);
           setMessage(
             playerTurn
               ? "Trận đấu bắt đầu! Lượt của bạn"
@@ -151,6 +161,7 @@ export default function RealGame({ currentUser }) {
     setCurrentRoom(null);
     setGame(new Chess());
     setRoomIdInput("");
+    setOpponent(null);
     setMessage("Nhập mã phòng để bắt đầu");
   };
 
@@ -278,18 +289,18 @@ export default function RealGame({ currentUser }) {
         <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10">
           <div className="flex items-center gap-3">
             <div className="flex justify-center items-center w-8 h-8 rounded-full bg-stone-700 font-semibold text-white text-sm border border-stone-600">
-              {isInRoom ? (gameStarted ? "⚔️" : "⏳") : "👤"}
+              {opponent && opponent.username ? opponent.username.charAt(0).toUpperCase() : 'N'}
             </div>
             <div className="flex flex-col">
               <span className="text-stone-200">
                 {isInRoom
                   ? gameStarted
-                    ? "Đối thủ (Online)"
+                    ? opponent.username
                     : "Đang chờ đối thủ..."
                   : "Đối thủ"}
               </span>
               <span className="text-xs text-stone-500 font-normal font-mono">
-                1200 ELO
+                {opponent && `${opponent.elo} ELO`}
               </span>
             </div>
           </div>

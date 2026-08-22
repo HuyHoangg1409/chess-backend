@@ -15,7 +15,7 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token"));
   const [currentUser, setCurrentUser] = useState(null);
   const [currentMode, setCurrentMode] = useState(() => {
-    return localStorage.getItem("app_mode") || "puzzle";
+    return localStorage.getItem("app_mode") || "real-time";
   });
 
   /**
