@@ -11,6 +11,9 @@ class chessRoom:
         self.black_ws: Optional[WebSocket] = None
         self.white_info: None
         self.black_info: None
+        self.white_draw_offered = False
+        self.black_draw_offered = False
+
 
     async def broadcast(self, message: dict):
         for ws in [self.white_ws, self.black_ws]:

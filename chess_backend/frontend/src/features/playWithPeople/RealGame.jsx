@@ -18,6 +18,7 @@ export default function RealGame({ currentUser }) {
 
   const [opponent, setOpponent] = useState(null);
 
+  const hasOfferedDrawRef = useRef(false);
   const wsRef = useRef(null);
 
   const connectWebsocket = (targetRoomId) => {
@@ -59,29 +60,32 @@ export default function RealGame({ currentUser }) {
         case "start": {
           playSound("game_start");
           const startedGame = new Chess(data.fen) || undefined;
+
+          const amIWhite = data.white_player?.username === currentUser.username;
+          const opponentData = amIWhite ? data.black_player : data.white_player;
+          const playerTurn =
+            data.turn === (actualColor === "white" ? "white" : "black");
+
+          hasOfferedDrawRef.current = false;
+          setOpponent(opponentData);
           setGame(startedGame);
           setGameStarted(true);
           setIsCompleted(false);
-          resetTimer(600);
-          
-          const amIWhite = data.white_player?.username === currentUser.username;
-          const myColor = amIWhite ? "white" : "black";
-          const opponentData = amIWhite ? data.black_player : data.white_player
-          const playerTurn =
-          data.turn === (actualColor === "white" ? "white" : "black");
-          
-          // setActualColor(myColor)
-          setOpponent(opponentData);
           setMessage(
             playerTurn
               ? "Trận đấu bắt đầu! Lượt của bạn"
               : "Trận đấu bắt đầu! Lượt của đối thủ",
           );
+          resetTimer(600);
         }
 
         case "move": {
           const newGame = new Chess();
           newGame.load(data.fen);
+          const playerTurn = actualColor === "white" ? "w" : "b";
+          setMessage(
+            newGame.turn() === playerTurn ? "Lượt của bạn" : "Lượt của đối thủ",
+          );
           setGame(newGame);
 
           if (newGame.inCheck()) {
@@ -91,20 +95,48 @@ export default function RealGame({ currentUser }) {
           } else {
             playSound("move");
           }
+          break;
+        }
 
-          if (data.is_over) {
-            playSound("game_end");
-            setIsCompleted(true);
-            setGameStarted(false);
-            setMessage(data.result || "Trận đấu kết thúc!");
-          } else {
-            const playerTurn = actualColor === "white" ? "w" : "b";
-            setMessage(
-              newGame.turn() === playerTurn
-                ? "Lượt của bạn"
-                : "Lượt của đối thủ",
+        case "game_over": {
+          
+          playSound("game_end");
+          setIsCompleted(true);
+          setGameStarted(false);
+          setMessage(data.reason || "Trận đấu kết thúc");
+          break;
+        }
+
+        case "resign": {
+          playSound("game_end");
+          setIsCompleted(true);
+          setGameStarted(false);
+          setMessage("Bạn đã đầu hàng");
+          break;
+        }
+
+        case "draw_offered": {
+          const accepted = confirm(
+            `${data.from_player} xin hòa. Bạn có đồng ý không?`,
+          );
+
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(
+              JSON.stringify({ type: "draw_respond", accepted: accepted }),
             );
           }
+          break;
+        }
+
+        case "draw_declined": {
+          alert("Đối thủ đã từ chối hòa!");
+          setMessage(
+            (game.turn() === actualColor) === "white"
+              ? "w"
+              : "b"
+                ? "Lượt của bạn"
+                : "Lượt của đối thủ",
+          );
           break;
         }
 
@@ -117,8 +149,7 @@ export default function RealGame({ currentUser }) {
         }
 
         case "error": {
-          alert(data.message());
-          handleLeaveRoom();
+          alert(data.message);
           break;
         }
 
@@ -175,20 +206,19 @@ export default function RealGame({ currentUser }) {
     setGameStarted(false);
     if (loser === "player") {
       setMessage("Bạn đã hết giờ. Đối thủ thắng");
-    }
-    else {
-      setMessage("Đối thủ hết giờ. Bạn thắng")
+    } else {
+      setMessage("Đối thủ hết giờ. Bạn thắng");
     }
   }, []);
 
-  const {playerTime, opponentTime, formatTime, resetTimer} = useChessTimer({
+  const { playerTime, opponentTime, formatTime, resetTimer } = useChessTimer({
     initialTime: 600,
     gameStarted,
     isCompleted,
     currentTurn: game.turn(),
     playerColor: actualColor,
     onTimeOut: handleTimeOut,
-  })
+  });
 
   // const handleCopyRoomCode = () => {}
   const handleStartGame = () => {
@@ -219,10 +249,21 @@ export default function RealGame({ currentUser }) {
    * Xử lý khi người chơi đầu hàng
    */
   const handleResign = () => {
-    playSound("game_end");
-    setIsCompleted(true);
-    setGameStarted(false);
-    setMessage("Bạn đã đầu hàng");
+    if (!gameStarted || isCompleted) return;
+    if (confirm("Bạn có chắc chắn muốn đầu hàng không?")) {
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "resign" }));
+      }
+    }
+  };
+
+  const handleDraw = () => {
+    if (!gameStarted || isCompleted) return;
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "draw_offer" }));
+      hasOfferedDrawRef.current = true;
+      setMessage("Đã gửi lời cầu hòa. Đang chờ phản hồi..");
+    }
   };
 
   /**
@@ -297,8 +338,10 @@ export default function RealGame({ currentUser }) {
         {/* Thanh thông tin đối thủ (trên) */}
         <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10">
           <div className="flex items-center gap-3">
-            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-stone-700 font-semibold text-white text-sm border border-stone-600">
-              {opponent && opponent.username ? opponent.username.charAt(0).toUpperCase() : 'N'}
+            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white text-sm border border-stone-600">
+              {opponent && opponent.username
+                ? opponent.username.charAt(0).toUpperCase()
+                : "N"}
             </div>
             <div className="flex flex-col">
               <span className="text-stone-200">
@@ -489,9 +532,6 @@ export default function RealGame({ currentUser }) {
                     {currentRoom}
                   </span>
                 </div>
-              </div>
-
-              {!gameStarted ? (
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -501,8 +541,9 @@ export default function RealGame({ currentUser }) {
                     Rời phòng
                   </button>
                 </div>
-              ) : (
-                <div className="flex gap-2">
+              </div>
+              {gameStarted && (
+                <div className="flex gap-2 item-center">
                   <button
                     type="button"
                     onClick={handleResign}
@@ -513,10 +554,12 @@ export default function RealGame({ currentUser }) {
                   </button>
                   <button
                     type="button"
-                    onClick={handleLeaveRoom}
-                    className="px-3 py-2.5 rounded-xl font-bold text-sm bg-stone-800 hover:bg-stone-700 text-stone-300 transition-all cursor-pointer border border-stone-700"
+                    onClick={handleDraw}
+                    disabled={hasOfferedDrawRef.current}
+                    className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-[#6c757d]/90 hover:bg-[#6c757d] text-white transition-all cursor-pointer disabled:cursor-default flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
                   >
-                    Rời phòng
+                    <span>🫶</span>
+                    <span>Cầu hòa</span>
                   </button>
                 </div>
               )}
