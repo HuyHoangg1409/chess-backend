@@ -1,5 +1,6 @@
 from os import access
 import chess
+import chess.pgn
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 
@@ -72,11 +73,13 @@ async def websocket_endpoint(
                 current_turn = "white" if room.board.turn == chess.WHITE else "black"
                 if player_color == current_turn and move in room.board.legal_moves:
                     room.board.push(move)
+                    game = chess.pgn.Game.from_board(room.board)
+                    pgn_string = str(game)
                     await room.broadcast(
                         {
                             "type": "move",
                             "move": move_uci,
-                            "fen": room.board.fen(),
+                            "pgn": pgn_string,
                             "turn": (
                                 "white" if room.board.turn == chess.WHITE else "black"
                             ),

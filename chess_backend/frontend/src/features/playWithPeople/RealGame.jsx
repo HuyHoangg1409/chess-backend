@@ -63,8 +63,7 @@ export default function RealGame({ currentUser }) {
 
           const amIWhite = data.white_player?.username === currentUser.username;
           const opponentData = amIWhite ? data.black_player : data.white_player;
-          const playerTurn =
-            data.turn === (actualColor === "white" ? "white" : "black");
+          const playerTurn = data.turn === (amIWhite ? "white" : "black");
 
           hasOfferedDrawRef.current = false;
           setOpponent(opponentData);
@@ -77,29 +76,21 @@ export default function RealGame({ currentUser }) {
               : "Trận đấu bắt đầu! Lượt của đối thủ",
           );
           resetTimer(600);
+          break;
         }
 
         case "move": {
           const newGame = new Chess();
-          newGame.load(data.fen);
+          newGame.loadPgn(data.pgn);
           const playerTurn = actualColor === "white" ? "w" : "b";
           setMessage(
             newGame.turn() === playerTurn ? "Lượt của bạn" : "Lượt của đối thủ",
           );
           setGame(newGame);
-
-          if (newGame.inCheck()) {
-            playSound("check");
-          } else if (data.is_capture) {
-            playSound("capture");
-          } else {
-            playSound("move");
-          }
           break;
         }
 
         case "game_over": {
-          
           playSound("game_end");
           setIsCompleted(true);
           setGameStarted(false);
@@ -186,9 +177,7 @@ export default function RealGame({ currentUser }) {
 
   const handleCreateRoom = () => {
     const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setRoomIdInput(randomCode);
-    setMessage("Đã tạo mã. Bấm vào phòng để đợi đối thủ");
-    // connectWebsocket(randomCode)
+    connectWebsocket(randomCode);
   };
 
   const handleJoinRoom = () => {
@@ -302,6 +291,7 @@ export default function RealGame({ currentUser }) {
           JSON.stringify({
             type: "move",
             move: uciMove,
+            pgn: newGame.pgn(),
           }),
         );
       }
@@ -492,7 +482,7 @@ export default function RealGame({ currentUser }) {
                 className="flex flex-col gap-2"
               >
                 <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
-                  Vào phòng có sẵn
+                  Vào phòng theo mã
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -517,7 +507,7 @@ export default function RealGame({ currentUser }) {
                 onClick={handleCreateRoom}
                 className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold text-sm rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
               >
-                <span>Tạo phòng mới</span>
+                <span>Vào phòng ngẫu nhiên</span>
               </button>
             </div>
           ) : (
