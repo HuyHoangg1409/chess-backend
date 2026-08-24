@@ -38,6 +38,8 @@ async def websocket_endpoint(
         player_color = "black"
     else:
         await websocket.send_json({"type": "error", "message": "Phòng đã đủ 2 người"})
+        await websocket.close()
+        return
 
     await websocket.send_json(
         {
@@ -62,6 +64,8 @@ async def websocket_endpoint(
     try:
         while True:
             data = await websocket.receive_json()
+            player_color = "white" if room.white_ws == websocket else "black"
+            opponent_ws = room.black_ws if player_color == "white" else room.white_ws
 
             if data.get("type") == "move":
                 move_uci = data.get("move")
@@ -112,7 +116,7 @@ async def websocket_endpoint(
                     else room.black_draw_offered
                 )
                 if has_offered:
-                    await room.broadcast(
+                    await websocket.send_json(
                         {
                             "type": "error",
                             "message": "Bạn chỉ được gửi 1 lời mời cầu hòa",
@@ -124,9 +128,6 @@ async def websocket_endpoint(
                 else:
                     room.black_draw_offered = True
 
-                opponent_ws = (
-                    room.black_ws if player_color == "white" else room.white_ws
-                )
                 if opponent_ws:
                     await opponent_ws.send_json(
                         {"type": "draw_offered", "from_player": db_user.username}
@@ -134,7 +135,6 @@ async def websocket_endpoint(
 
             elif data.get("type") == "draw_respond":
                 accepted = data.get("accepted", False)
-                print(accepted)
                 if accepted:
                     await room.broadcast(
                         {
@@ -144,10 +144,35 @@ async def websocket_endpoint(
                         }
                     )
                 else:
-                    opponent_ws = (
-                        room.black_ws if player_color == "white" else room.white_ws
-                    )
                     await opponent_ws.send_json({"type": "draw_declined"})
+
+            elif data.get("type") == "play_again_offer":
+                await opponent_ws.send_json(
+                    {
+                        "type": "play_again_offered",
+                        "from_player": db_user.username,
+                    }
+                )
+
+            elif data.get("type") == "play_again_respond":
+                accepted = data.get("accepted", False)
+                if accepted:
+                    room.white_ws, room.black_ws = room.black_ws, room.white_ws
+                    room.white_info, room.black_info = room.black_info, room.white_info
+                    room.white_draw_offered = False
+                    room.black_draw_offered = False
+                    room.board = chess.Board()
+                    await room.broadcast(
+                        {
+                            "type": "start",
+                            "fen": room.board.fen(),
+                            "turn": "white",
+                            "white_player": room.white_info,
+                            "black_player": room.black_info,
+                        }
+                    )
+                else:
+                    await opponent_ws.send_json({"type": "play_again_declined"}),
 
             elif data.get("type") == "resign":
                 winner_color = "black" if player_color == "white" else "white"
@@ -160,13 +185,16 @@ async def websocket_endpoint(
                 )
 
     except WebSocketDisconnect:
-        if player_color == "white":
+        leaving_color = "white" if room.white_ws == websocket else "black"
+        if room.white_ws == websocket:
             room.white_ws = None
-        else:
+            room.white_info = None
+        elif room.black_ws == websocket:
             room.black_ws = None
+            room.black_info = None
 
         await room.broadcast(
-            {"type": "player-left", "message": f"Bên {player_color} đã rời khỏi phòng"}
+            {"type": "player_left", "message": f"Bên {leaving_color} đã rời khỏi phòng"}
         )
 
         if room.white_ws is None and room.black_ws is None:

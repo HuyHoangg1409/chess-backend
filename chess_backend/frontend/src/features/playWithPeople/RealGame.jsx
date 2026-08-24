@@ -19,6 +19,7 @@ export default function RealGame({ currentUser }) {
   const [opponent, setOpponent] = useState(null);
 
   const hasOfferedDrawRef = useRef(false);
+  const hasOfferedPlayAgainRef = useRef(false);
   const wsRef = useRef(null);
 
   const connectWebsocket = (targetRoomId) => {
@@ -59,13 +60,20 @@ export default function RealGame({ currentUser }) {
 
         case "start": {
           playSound("game_start");
-          const startedGame = new Chess(data.fen) || undefined;
+          const startedGame = new Chess(data.fen);
 
-          const amIWhite = data.white_player?.username === currentUser.username;
-          const opponentData = amIWhite ? data.black_player : data.white_player;
-          const playerTurn = data.turn === (amIWhite ? "white" : "black");
+          const myColor =
+            data.color ||
+            (data.white_player?.username === currentUser?.username
+              ? "white"
+              : "black");
+          const opponentData =
+            myColor === "white" ? data.black_player : data.white_player;
+          const playerTurn = data.turn === myColor;
 
+          hasOfferedPlayAgainRef.current = false;
           hasOfferedDrawRef.current = false;
+          setActualColor(myColor);
           setOpponent(opponentData);
           setGame(startedGame);
           setGameStarted(true);
@@ -82,10 +90,9 @@ export default function RealGame({ currentUser }) {
         case "move": {
           const newGame = new Chess();
           newGame.loadPgn(data.pgn);
-          const playerTurn = actualColor === "white" ? "w" : "b";
-          setMessage(
-            newGame.turn() === playerTurn ? "Lượt của bạn" : "Lượt của đối thủ",
-          );
+          const isMyTurn =
+            newGame.turn() === (actualColor === "white" ? "w" : "b");
+          setMessage(isMyTurn ? "Lượt của bạn" : "Lượt của đối thủ");
           setGame(newGame);
           break;
         }
@@ -121,13 +128,30 @@ export default function RealGame({ currentUser }) {
 
         case "draw_declined": {
           alert("Đối thủ đã từ chối hòa!");
-          setMessage(
-            (game.turn() === actualColor) === "white"
-              ? "w"
-              : "b"
-                ? "Lượt của bạn"
-                : "Lượt của đối thủ",
-          );
+          const isMyTurn =
+            game.turn() === (actualColor === "white" ? "w" : "b");
+          setMessage(isMyTurn ? "Lượt của bạn" : "Lượt của đối thủ");
+          break;
+        }
+
+        case "play_again_offered": {
+          const accepted = confirm(`${data.from_player} muốn tái đấu. Đồng ý?`);
+
+          if (wsRef.current && wsRef.current.readyState == WebSocket.OPEN) {
+            wsRef.current.send(
+              JSON.stringify({
+                type: "play_again_respond",
+                accepted: accepted,
+              }),
+            );
+          }
+          break;
+        }
+
+        case "play_again_declined": {
+          alert("Đối thủ từ chối tái đấu!");
+          hasOfferedPlayAgainRef.current = false;
+          setMessage("Đối thủ từ chối tái đấu");
           break;
         }
 
@@ -135,7 +159,8 @@ export default function RealGame({ currentUser }) {
           playSound("game_end");
           setGameStarted(false);
           setIsCompleted(true);
-          setMessage(data.message);
+          setOpponent(null);
+          setMessage(data.message || "Đối thủ đã rời khỏi phòng");
           break;
         }
 
@@ -255,6 +280,15 @@ export default function RealGame({ currentUser }) {
     }
   };
 
+  const handlePlayAgain = () => {
+    if (gameStarted || !isCompleted) return;
+    if (wsRef.current && wsRef.current.readyState == WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "play_again_offer" }));
+      hasOfferedPlayAgainRef.current = true;
+      setMessage("Đã gửi lời mời tái đấu. Đang chờ phản hồi..");
+    }
+  };
+
   /**
    * Xử lý khi thực hiện nước đi trên bàn cờ
    */
@@ -329,20 +363,24 @@ export default function RealGame({ currentUser }) {
         <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10">
           <div className="flex items-center gap-3">
             <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white text-sm border border-stone-600">
-              {opponent && opponent.username
+              {opponent?.username
                 ? opponent.username.charAt(0).toUpperCase()
-                : "N"}
+                : "?"}
             </div>
             <div className="flex flex-col">
               <span className="text-stone-200">
                 {isInRoom
-                  ? gameStarted
+                  ? opponent?.username
                     ? opponent.username
                     : "Đang chờ đối thủ..."
                   : "Đối thủ"}
               </span>
               <span className="text-xs text-stone-500 font-normal font-mono">
-                {opponent && `${opponent.elo} ELO`}
+                {opponent?.elo !== undefined && opponent?.elo !== null
+                  ? `${opponent.elo} ELO`
+                  : isInRoom && opponent?.username
+                    ? "1200 ELO"
+                    : ""}
               </span>
             </div>
           </div>
@@ -552,6 +590,16 @@ export default function RealGame({ currentUser }) {
                     <span>Cầu hòa</span>
                   </button>
                 </div>
+              )}
+              {!gameStarted && isCompleted && (
+                <button
+                  type="button"
+                  onClick={handlePlayAgain}
+                  disabled={hasOfferedPlayAgainRef.current}
+                  className="flex-1 py-2.5 rounded-xl font-bold text-sm bg-green-600 hover:bg-green-700 text-white transition-all cursor-pointer disabled:cursor-default flex items-center justify-center gap-1.5 shadow-md disabled:opacity-50"
+                >
+                  <span>Chơi lại</span>
+                </button>
               )}
             </div>
           )}
