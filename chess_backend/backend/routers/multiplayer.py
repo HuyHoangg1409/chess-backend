@@ -8,6 +8,7 @@ from ..database import get_db
 from ..room_manage import chessRoom, rooms
 from ..secure import get_user_from_token
 from ..models import User
+from ..utils.elo import calculate_pvp_elo
 
 router = APIRouter(prefix="/ws", tags=["Multiplayer"])
 
@@ -30,11 +31,13 @@ async def websocket_endpoint(
     player_color = None
     if room.white_ws is None:
         room.white_ws = websocket
-        room.white_info = {"username": db_user.username, "elo": db_user.elo_rating}
+        room.white_info = {"username": db_user.username, "elo": db_user.pvp_elo}
+        room.white_user_id = db_user.user_id
         player_color = "white"
     elif room.black_ws is None:
         room.black_ws = websocket
-        room.black_info = {"username": db_user.username, "elo": db_user.elo_rating}
+        room.black_info = {"username": db_user.username, "elo": db_user.pvp_elo}
+        room.black_user_id = db_user.user_id
         player_color = "black"
     else:
         await websocket.send_json({"type": "error", "message": "Phòng đã đủ 2 người"})
@@ -66,6 +69,8 @@ async def websocket_endpoint(
             data = await websocket.receive_json()
             player_color = "white" if room.white_ws == websocket else "black"
             opponent_ws = room.black_ws if player_color == "white" else room.white_ws
+            # game = chess.pgn.Game.from_board(room.board)
+            # pgn_string = str(game)
 
             if data.get("type") == "move":
                 move_uci = data.get("move")
@@ -93,19 +98,28 @@ async def websocket_endpoint(
                     if room.board.is_game_over():
                         winner = None
                         reason = "Hòa cờ"
+                        result = "draw"
                         if room.board.is_checkmate():
                             winner = player_color
                             reason = f"{db_user.username} thắng!"
+                            result = f"{winner} win"
                         elif room.board.is_stalemate():
                             reason = "Hòa do hết nước đi"
                         elif room.board.is_insufficient_material():
                             reason = "Hòa do không đủ quân"
+                        white_elo, black_elo, delta_w, delta_b = (
+                            await room.handle_game_over(db, result, pgn_string)
+                        )
                         await room.broadcast(
                             {
                                 "type": "game_over",
                                 "winner": winner,
                                 "reason": reason,
                                 "fen": room.board.fen(),
+                                "white_elo": white_elo,
+                                "black_elo": black_elo,
+                                "white_elo_change": delta_w,
+                                "black_elo_change": delta_b,
                             }
                         )
 
@@ -136,11 +150,20 @@ async def websocket_endpoint(
             elif data.get("type") == "draw_respond":
                 accepted = data.get("accepted", False)
                 if accepted:
+                    game = chess.pgn.Game.from_board(room.board)
+                    pgn_string = str(game)
+                    white_elo, black_elo, delta_w, delta_b = (
+                        await room.handle_game_over(db, "draw", pgn_string)
+                    )
                     await room.broadcast(
                         {
                             "type": "game_over",
                             "winner": None,
                             "reason": "Trận đấu hòa",
+                            "white_elo": white_elo,
+                            "black_elo": black_elo,
+                            "white_elo_change": delta_w,
+                            "black_elo_change": delta_b,
                         }
                     )
                 else:
@@ -159,6 +182,7 @@ async def websocket_endpoint(
                 if accepted:
                     room.white_ws, room.black_ws = room.black_ws, room.white_ws
                     room.white_info, room.black_info = room.black_info, room.white_info
+                    room.white_user_id, room.black_user_id = room.black_user_id, room.white_user_id
                     room.white_draw_offered = False
                     room.black_draw_offered = False
                     room.board = chess.Board()
@@ -175,12 +199,21 @@ async def websocket_endpoint(
                     await opponent_ws.send_json({"type": "play_again_declined"}),
 
             elif data.get("type") == "resign":
+                game = chess.pgn.Game.from_board(room.board)
+                pgn_string = str(game)
                 winner_color = "black" if player_color == "white" else "white"
+                white_elo, black_elo, delta_w, delta_b = await room.handle_game_over(
+                    db, f"{winner_color} win", pgn_string
+                )
                 await room.broadcast(
                     {
                         "type": "game_over",
                         "winner": winner_color,
                         "reason": f"{db_user.username} đã đầu hàng!",
+                        "white_elo": white_elo,
+                        "black_elo": black_elo,
+                        "white_elo_change": delta_w,
+                        "black_elo_change": delta_b,
                     }
                 )
 

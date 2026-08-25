@@ -97,7 +97,12 @@ function App() {
               />
             )}
             {currentMode == "ai" && <AIGame currentUser={currentUser} />}
-            {currentMode == "real-time" && <RealGame currentUser={currentUser} />}
+            {currentMode == "real-time" && (
+              <RealGame
+                currentUser={currentUser}
+                setCurrentUser={setCurrentUser}
+              />
+            )}
           </main>
         </div>
       </div>

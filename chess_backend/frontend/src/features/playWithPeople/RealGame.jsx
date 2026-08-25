@@ -6,7 +6,7 @@ import { playSound } from "../../utils/sounds";
 import { getCapturedPieces, getPieceValue } from "../../utils/chessHelper";
 import { useChessTimer } from "../../hooks/useChessTimer";
 
-export default function RealGame({ currentUser }) {
+export default function RealGame({ currentUser, setCurrentUser }) {
   const [game, setGame] = useState(new Chess());
   const [roomIdInput, setRoomIdInput] = useState("");
   const [currentRoom, setCurrentRoom] = useState(null);
@@ -21,6 +21,7 @@ export default function RealGame({ currentUser }) {
   const hasOfferedDrawRef = useRef(false);
   const hasOfferedPlayAgainRef = useRef(false);
   const wsRef = useRef(null);
+  const actualColorRef = useRef("white");
 
   const connectWebsocket = (targetRoomId) => {
     if (wsRef.current) {
@@ -50,6 +51,7 @@ export default function RealGame({ currentUser }) {
 
       switch (data.type) {
         case "init": {
+          actualColorRef.current = data.color;
           setActualColor(data.color);
           if (data.fen) {
             const loadedGame = new Chess(data.fen);
@@ -73,6 +75,7 @@ export default function RealGame({ currentUser }) {
 
           hasOfferedPlayAgainRef.current = false;
           hasOfferedDrawRef.current = false;
+          actualColorRef.current = myColor;
           setActualColor(myColor);
           setOpponent(opponentData);
           setGame(startedGame);
@@ -98,10 +101,22 @@ export default function RealGame({ currentUser }) {
         }
 
         case "game_over": {
+          const isWhite = actualColorRef.current === "white";
+          const myNewElo = isWhite ? data.white_elo : data.black_elo;
+          const enmyNewElo = isWhite ? data.black_elo : data.white_elo;
+
           playSound("game_end");
           setIsCompleted(true);
           setGameStarted(false);
           setMessage(data.reason || "Trận đấu kết thúc");
+          setOpponent((prev) => ({
+            ...prev,
+            elo: enmyNewElo,
+          }));
+          setCurrentUser((prev) => ({
+            ...prev,
+            pvp_elo: myNewElo,
+          }));
           break;
         }
 
@@ -175,6 +190,7 @@ export default function RealGame({ currentUser }) {
     };
 
     ws.onclose = () => {
+      // playSound("room_left");
       // setIsInRoom(false);
       // setGameStarted(false);
     };
@@ -201,11 +217,13 @@ export default function RealGame({ currentUser }) {
   };
 
   const handleCreateRoom = () => {
+    playSound("room_join");
     const randomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     connectWebsocket(randomCode);
   };
 
   const handleJoinRoom = () => {
+    playSound("room_join");
     const targetId = roomIdInput.trim().toUpperCase();
     if (!targetId) {
       setMessage("Vui lòng nhập hoặc tạo mã phòng trước!");
@@ -438,8 +456,8 @@ export default function RealGame({ currentUser }) {
                 {currentUser?.username || "Bạn"}
               </span>
               <span className="text-xs text-stone-500 font-normal font-mono">
-                {currentUser?.elo_rating
-                  ? `${currentUser.elo_rating} ELO`
+                {currentUser?.pvp_elo
+                  ? `${currentUser.pvp_elo} ELO`
                   : "1200 ELO"}
               </span>
             </div>

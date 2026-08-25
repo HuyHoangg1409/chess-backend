@@ -15,7 +15,7 @@ export default function Header({ currentUser }) {
 
           <div className="flex flex-col text-left">
             <span className="text-sm font-semibold text-white">{currentUser.username}</span>
-            <span className="text-xs font-mono">{currentUser.elo_rating} <span>ELO</span></span>
+            <span className="text-xs font-mono">{currentUser.pvp_elo} <span>ELO</span></span>
           </div>
         </div>
       </div>

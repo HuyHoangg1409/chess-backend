@@ -35,7 +35,7 @@ export default function Sidebar({ currentUser, currentMode, onSelectMode, onLogo
           </div>
           <div className="flex flex-col text-left overflow-hidden">
             <span className="text-sm font-semibold text-white truncate">{currentUser.username}</span>
-            <span className="text-xs font-mono">{currentUser.elo_rating} <span>ELO</span></span>
+            <span className="text-xs font-mono">{currentUser.pvp_elo} <span>ELO</span></span>
           </div>
 
           <button onClick={onLogout} className="flex items-center justify-center ml-auto size-9 leading-none text-white bg-red-500 text-xl rounded-full border border-chess-border cursor-pointer hover:bg-red-600 transition-colors duration-300">🏃</button>

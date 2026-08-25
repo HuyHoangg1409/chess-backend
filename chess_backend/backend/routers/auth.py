@@ -96,7 +96,7 @@ def get_my_information(
         HTTPException: Trả về lỗi 404 nếu không tìm thấy người chơi trong database
 
     Returns:
-        dict: Trả về "user_id", "username" và "elo_rating" của người chơi hiện tại
+        dict: Trả về "user_id", "username", "puzzle_elo" và "pvp_elo" của người chơi hiện tại
     """
     user_id = current_user.get("user_id")
 
@@ -109,5 +109,6 @@ def get_my_information(
     return {
         "user_id": db_user.user_id,
         "username": db_user.username,
-        "elo_rating": db_user.elo_rating,
+        "puzzle_elo": db_user.puzzle_elo,
+        "pvp_elo": db_user.pvp_elo,
     }

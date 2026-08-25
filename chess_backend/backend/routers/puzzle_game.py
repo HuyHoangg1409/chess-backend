@@ -12,8 +12,9 @@ from ..schemas import (
     HelpRequest,
 )
 from ..database import get_db
-from ..dependencies import get_current_user, calculate_new_elo
+from ..dependencies import get_current_user
 from ..models import Puzzles, User, UserPuzzleHistory
+from ..utils.elo import calculate_puzzle_elo
 
 router = APIRouter(prefix="/puzzles", tags=["Puzzle Game"])
 
@@ -158,8 +159,8 @@ def get_puzzle_help(
     correctMovesArray = db_puzzle.correct_moves.strip().split(" ")
     help = correctMovesArray[request.move_index]
 
-    new_elo, elo_change = calculate_new_elo(db_user.elo_rating, db_puzzle.rating, False)
-    db_user.elo_rating -= round(abs(elo_change) / 2)
+    new_elo, elo_change = calculate_puzzle_elo(db_user.puzzle_elo, db_puzzle.rating, False)
+    db_user.puzzle_elo -= round(abs(elo_change) / 2)
     print(f"Trừ {round(abs(elo_change) / 2)}")
     db.add(db_user)
     db.commit()
@@ -222,11 +223,11 @@ def check_puzzle_answer(
         if user_list[i] != correct_list[i]:
             result = False
 
-    new_elo, elo_change = calculate_new_elo(db_user.elo_rating, puzzle.rating, result)
+    new_elo, elo_change = calculate_puzzle_elo(db_user.puzzle_elo, puzzle.rating, result)
     print(f"{new_elo}, {elo_change}")
 
     if len(user_list) == len(correct_list) and result:
-        db_user.elo_rating = new_elo
+        db_user.puzzle_elo = new_elo
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
@@ -246,7 +247,7 @@ def check_puzzle_answer(
                 message="Đáp án đúng",
             )
         else:
-            db_user.elo_rating = new_elo
+            db_user.puzzle_elo = new_elo
             db.add(db_user)
             db.commit()
             db.refresh(db_user)
@@ -319,15 +320,15 @@ def add_puzzle_history(
             status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy câu đố"
         )
 
-    new_elo, elo_changed = calculate_new_elo(
-        db_user.elo_rating, db_puzzle.rating, history.is_correct
+    new_elo, elo_changed = calculate_puzzle_elo(
+        db_user.puzzle_elo, db_puzzle.rating, history.is_correct
     )
 
     new_record = UserPuzzleHistory(
         user_id=db_user.user_id,
         puzzle_id=history.puzzle_id,
         is_correct=history.is_correct,
-        player_elo=db_user.elo_rating,
+        player_elo=db_user.puzzle_elo,
     )
     db.add(new_record)
     db.commit()
