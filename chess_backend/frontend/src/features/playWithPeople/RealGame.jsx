@@ -5,6 +5,7 @@ import MoveHistoryTable from "../../components/MoveHistoryTable";
 import { playSound } from "../../utils/sounds";
 import { getCapturedPieces, getPieceValue } from "../../utils/chessHelper";
 import { useChessTimer } from "../../hooks/useChessTimer";
+import { GameOverModal } from "../../components/GameOverModal";
 
 export default function RealGame({ currentUser, setCurrentUser }) {
   const [game, setGame] = useState(new Chess());
@@ -15,6 +16,13 @@ export default function RealGame({ currentUser, setCurrentUser }) {
   const [isCompleted, setIsCompleted] = useState(false);
   const [actualColor, setActualColor] = useState("white");
   const [message, setMessage] = useState("Nhập mã phòng để bắt đầu");
+  const [score, setScore] = useState({ player: 0, opponent: 0 });
+  const [gameOverResult, setGameOverResult] = useState({
+    winner: null,
+    reason: "",
+    whiteEloChange: 0,
+    blackEloChange: 0,
+  });
 
   const [opponent, setOpponent] = useState(null);
 
@@ -102,13 +110,37 @@ export default function RealGame({ currentUser, setCurrentUser }) {
 
         case "game_over": {
           const isWhite = actualColorRef.current === "white";
+          const isWinner = data.winner === actualColorRef.current;
+          const isDraw = !data.winner;
           const myNewElo = isWhite ? data.white_elo : data.black_elo;
           const enmyNewElo = isWhite ? data.black_elo : data.white_elo;
+          console.log("isDraw", isDraw);
+          console.log("isWinner", isWinner);
+          console.log("dataWinner", data.winner);
+          console.log("color", actualColorRef.current);
 
           playSound("game_end");
           setIsCompleted(true);
           setGameStarted(false);
           setMessage(data.reason || "Trận đấu kết thúc");
+          setScore((prev) => {
+            if (isDraw) {
+              return {
+                player: prev.player + 0.5,
+                opponent: prev.opponent + 0.5,
+              };
+            }
+            if (!isWinner) {
+              return { ...prev, opponent: prev.opponent + 1.0 };
+            }
+            return { ...prev, player: prev.player + 1.0 };
+          });
+          setGameOverResult({
+            winner: data.winner,
+            reason: data.reason,
+            whiteEloChange: data.white_elo_change,
+            blackEloChange: data.black_elo_change,
+          });
           setOpponent((prev) => ({
             ...prev,
             elo: enmyNewElo,
@@ -117,6 +149,8 @@ export default function RealGame({ currentUser, setCurrentUser }) {
             ...prev,
             pvp_elo: myNewElo,
           }));
+          console.log(score);
+
           break;
         }
 
@@ -125,6 +159,8 @@ export default function RealGame({ currentUser, setCurrentUser }) {
           setIsCompleted(true);
           setGameStarted(false);
           setMessage("Bạn đã đầu hàng");
+          actualColorRef.current =
+            actualColorRef.current === "white" ? "black" : "white";
           break;
         }
 
@@ -206,6 +242,7 @@ export default function RealGame({ currentUser, setCurrentUser }) {
       wsRef.current.close();
       wsRef.current = null;
     }
+    setScore({ player: 0, opponent: 0 });
     setIsInRoom(false);
     setGameStarted(false);
     setIsCompleted(false);
@@ -267,8 +304,6 @@ export default function RealGame({ currentUser, setCurrentUser }) {
     const selectedTime =
       TIME_CONTROLS.find((t) => t.id === timeControl)?.initialSeconds || 600;
     setActualColor(assignedColor);
-    setPlayerTime(selectedTime);
-    setOpponentTime(selectedTime);
 
     setMessage(
       newGame.turn() === (assignedColor === "white" ? "w" : "b")
@@ -429,6 +464,22 @@ export default function RealGame({ currentUser, setCurrentUser }) {
             </div>
           </div>
         </div>
+
+        <GameOverModal
+          isOpen={isCompleted}
+          winner={gameOverResult.winner}
+          reason={gameOverResult.reason}
+          actualColor={actualColor}
+          whiteEloChange={gameOverResult.whiteEloChange}
+          blackEloChange={gameOverResult.blackEloChange}
+          currentUser={currentUser}
+          opponent={opponent}
+          score={score}
+          handlePlayAgain={handlePlayAgain}
+          hasOfferedPlayAgain={hasOfferedPlayAgainRef.current}
+          onClose={() => setIsCompleted(false)}
+          onLeave={handleLeaveRoom}
+        />
 
         {/* Bàn cờ */}
         <ChessBoardView
