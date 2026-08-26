@@ -90,7 +90,7 @@ export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
 };
 
 /**
- * Gửi request đến api /puzzles/help để lấy nước đi chính xác tại moveIndex.
+ * Gửi request đến endpoint /puzzles/help để lấy nước đi chính xác tại moveIndex.
  * @param {int} puzzle_id - ID của câu đố cần lấy đáp án
  * @param {int} moveIndex - Index của đáp án cần lấy
  * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
@@ -107,7 +107,7 @@ export const getHelp = async (puzzle_id, moveIndex, token) => {
 };
 
 /**
- * Gửi request đến api /history/add để cập nhật lịch sử giải đố của người chơi vào database.
+ * Gửi request đến endpoint /history/add để cập nhật lịch sử giải đố của người chơi vào database.
  * @param {int} puzzle_id - ID của puzzle
  * @param {boolean} status - True nếu người chơi giải đúng, False nếu người chơi giải sai
  * @param {string} token - Chuỗi JWT dùng để xác thực người dùng
@@ -124,7 +124,7 @@ export const addPuzzleHistory = async (puzzle_id, status, token) => {
 };
 
 /**
- * Gửi request đến api /ai/move để lấy nước đi tốt nhất của bot với thuật toán có độ sâu tương ứng với độ khó
+ * Gửi request đến endpoint /ai/move để lấy nước đi tốt nhất của bot với thuật toán có độ sâu tương ứng với độ khó
  * @param {string} fen - Chuỗi FEN của thế cờ hiện tại
  * @param {int} difficult - Độ khó của bot mà người chơi chọn
  * @returns {Promise<Object>} - Dữ liệu JSON trả về từ server bao gồm "best_move"
@@ -135,3 +135,13 @@ export const getAIBestMove = async (fen, difficult) => {
     body: JSON.stringify({ fen: fen, difficult: Number(difficult) }),
   });
 };
+
+/**
+ * Gửi request đến endpoint /matches/my-history để lấy danh sách lịch sử đấu.
+ */
+export const getHistoryList = async (token) => {
+  return await request("/matches/my-history", {
+    method: "GET",
+    headers: {Authorization: `Bearer ${token}`}
+  })
+}
