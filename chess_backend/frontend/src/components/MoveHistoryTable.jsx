@@ -1,15 +1,27 @@
 import React, { useRef, useEffect } from "react";
-import { formatMoveHistory } from "../utils/chessFormat";
+import { formatMoveHistory } from "../utils/chessHelper";
 
-export default function MoveHistoryTable({ history = [], className = "h-80" }) {
+export default function MoveHistoryTable({
+  history = [],
+  currentStep = null,
+  onSelectStep = null,
+  className = "h-80",
+}) {
   const scrollRef = useRef(null);
   const movePairs = formatMoveHistory(history);
 
+  const activeStep = currentStep !== null ? currentStep : history.length;
+
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const activeElement = scrollRef.current.querySelector(
+        '[data-active="true"]',
+      );
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
     }
-  }, [history]);
+  }, [activeStep]);
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -30,25 +42,32 @@ export default function MoveHistoryTable({ history = [], className = "h-80" }) {
         className="overflow-y-auto scroll-smooth scrollbar-thumb-stone-700 scrollbar-track-transparent"
       >
         {movePairs.map((pair, index) => {
-          const isWhiteActivate = history.length - 1 == index * 2;
-          const isBlackActivate = history.length - 1 == index * 2 + 1;
+          const isWhiteActivate = activeStep - 1 == index * 2;
+          const isBlackActivate = activeStep - 1 == index * 2 + 1;
           return (
             <div
               key={index}
-              className={`grid grid-cols-12 items-center px-4 py-1.5 font-semibold text-xs text-white transition-colors ${index % 2 == 0 ? "bg-[#262522]" : "bg-[#21201d]"
-                }`}
+              className={`grid grid-cols-12 items-center px-4 py-1.5 font-semibold text-xs text-white transition-colors ${
+                index % 2 == 0 ? "bg-[#262522]" : "bg-[#21201d]"
+              }`}
             >
               <span className="col-span-2">{pair.moveNumber}</span>
               <div className="col-span-5">
                 <span
-                  className={`inline-block rounded px-2 py-0.5 ml-2 transition-colors duration-200 ${isWhiteActivate ? "bg-[#63b413]" : " hover:bg-stone-700/50"}`}
+                  data-active={isWhiteActivate}
+                  onClick={() => onSelectStep && onSelectStep(index * 2 + 1)}
+                  className={`inline-block rounded px-2 py-0.5 ml-2 cursor-pointer transition-colors duration-200 ${isWhiteActivate ? "bg-[#63b413]" : " hover:bg-stone-700/50"}`}
                 >
                   {pair.white}
                 </span>
               </div>
               <div className="col-span-5">
                 <span
-                  className={`inline-block rounded px-2 py-0.5 ml-2 transition-colors duration-200 ${isBlackActivate ? "bg-[#63b413]" : " hover:bg-stone-700/50"}`}
+                  data-active={isBlackActivate}
+                  onClick={() =>
+                    pair.black && onSelectStep && onSelectStep(index * 2 + 2)
+                  }
+                  className={`inline-block rounded px-2 py-0.5 ml-2 cursor-pointer transition-colors duration-200 ${isBlackActivate ? "bg-[#63b413]" : " hover:bg-stone-700/50"}`}
                 >
                   {pair.black}
                 </span>

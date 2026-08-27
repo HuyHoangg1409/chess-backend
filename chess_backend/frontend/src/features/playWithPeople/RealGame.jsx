@@ -542,7 +542,7 @@ export default function RealGame({ currentUser, setCurrentUser }) {
         </div>
       </div>
 
-      {/* Khung điều khiển & phòng bên phải: sử dụng h-fit self-start gọn gàng */}
+      {/* Khung điều khiển bên phải*/}
       <div className="flex flex-col w-85 bg-chess-outline p-4 rounded-xl shadow-xl border border-chess-border h-fit self-start">
         {/* Header */}
         <div className="border-b border-chess-border pb-3">

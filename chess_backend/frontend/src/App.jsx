@@ -19,7 +19,7 @@ function App() {
   const [currentMode, setCurrentMode] = useState(() => {
     return localStorage.getItem("app_mode") || "real-time";
   });
-  const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [selectedMatchId, setSelectedMatchId] = useState(22);
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.
@@ -108,7 +108,7 @@ function App() {
             )}
             {currentMode == "history" &&
               (selectedMatchId ? (
-                <MatchReview />
+                <MatchReview matchId={selectedMatchId} onBack={() => setSelectedMatchId(null)}/>
               ) : (
                 <MatchHistory
                   currentUser={currentUser}
