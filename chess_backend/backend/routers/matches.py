@@ -43,7 +43,7 @@ def get_my_match_history(
     for m in matches:
         is_white = m.white_player_id == user_id
 
-        opponent_id = m.white_player_id if is_white else m.black_player_id
+        opponent_id = m.black_player_id if is_white else m.white_player_id
         opponent_info = db.query(User).filter(User.user_id == opponent_id).first()
 
         my_result = (

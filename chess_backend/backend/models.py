@@ -82,6 +82,7 @@ class GameMatches(Base):
     pgn: Mapped[str] = (mapped_column(Text, nullable=False))
     white_elo_change: Mapped[int] = (mapped_column(Integer, nullable=False))
     black_elo_change: Mapped[int] = (mapped_column(Integer, nullable=False))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable = False)
 
     white_player = (relationship("User", foreign_keys=[white_player_id]))
     black_player = (relationship("User", foreign_keys=[black_player_id]))

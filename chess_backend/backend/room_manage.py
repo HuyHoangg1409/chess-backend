@@ -40,7 +40,7 @@ class chessRoom:
 
         white_user.pvp_elo += delta_white
         black_user.pvp_elo += delta_black
-        
+
         self.white_info["elo"] = white_user.pvp_elo
         self.black_info["elo"] = black_user.pvp_elo
 
@@ -52,7 +52,7 @@ class chessRoom:
         new_match_history = GameMatches(
             white_player_id=self.white_user_id,
             black_player_id=self.black_user_id,
-            winner_username=winner_username,
+            winner_username=None if result == "draw" else winner_username,
             result=result,
             final_fen=self.board.fen(),
             pgn=pgn_string,
