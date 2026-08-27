@@ -16,6 +16,10 @@
     --color-chess-bg: #161512;
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 body {
     color: #bababa;
     margin: 0;

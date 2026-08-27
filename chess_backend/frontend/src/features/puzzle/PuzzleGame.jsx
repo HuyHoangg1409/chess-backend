@@ -374,7 +374,7 @@ export default function PuzzleGame({
 
   return (
     <>
-      <div className="relative w-140 bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
+      <div className="relative w-140 h-fit bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
         <ChessBoardView
           key={puzzle.puzzle_id}
           game={game}

@@ -10,6 +10,8 @@ import AIGame from "./features/playWithBots/AIGame";
 import Register from "./components/Register";
 import Auth from "./components/Auth";
 import RealGame from "./features/playWithPeople/RealGame";
+import MatchHistory from "./components/History/MatchHistory";
+import MatchReview from "./components/History/MatchReview";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("access_token"));
@@ -17,6 +19,7 @@ function App() {
   const [currentMode, setCurrentMode] = useState(() => {
     return localStorage.getItem("app_mode") || "real-time";
   });
+  const [selectedMatchId, setSelectedMatchId] = useState(null);
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.
@@ -78,17 +81,17 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen bg-chess-bg text-text-white p-6">
+    <div className="flex flex-col items-center min-h-screen bg-chess-bg text-text-white px-6">
       <Header currentUser={currentUser} />
 
-      <div className="flex justify-between h-fit w-full max-w-7xl">
+      <div className="flex justify-between w-full max-w-7xl flex-1">
         <Sidebar
           currentUser={currentUser}
           currentMode={currentMode}
           onSelectMode={setCurrentMode}
           onLogout={handleLogout}
         />
-        <div className="flex justify-between w-full">
+        <div className="flex flex-col justify-between flex-1 min-w-0 pb-6">
           <main className="flex justify-around w-full max-w-6xl">
             {currentMode == "puzzle" && (
               <PuzzleGame
@@ -103,11 +106,19 @@ function App() {
                 setCurrentUser={setCurrentUser}
               />
             )}
+            {currentMode == "history" &&
+              (selectedMatchId ? (
+                <MatchReview />
+              ) : (
+                <MatchHistory
+                  currentUser={currentUser}
+                  onSelectMatchId={setSelectedMatchId}
+                />
+              ))}
           </main>
+          <Footer />
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

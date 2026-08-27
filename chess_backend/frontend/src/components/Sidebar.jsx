@@ -3,12 +3,13 @@ import React from "react";
 const MENU_ITEMS = [
   { id: "puzzle", label: "Giải đố" },
   { id: "ai", label: "Chơi với máy" },
-  { id: "real-time", label: "Chơi với người"}
+  { id: "real-time", label: "Chơi với người"},
+  { id: "history", label: "Lịch sử đấu"},
 ];
 
 export default function Sidebar({ currentUser, currentMode, onSelectMode, onLogout }) {
   return (
-    <aside className="flex flex-col text-text-white bg-transparent min-h-140 w-62 p-3 sticky top-0 shrink-0 border-r border-aside-border-right">
+    <aside className="flex flex-col text-text-white bg-transparent h-[calc(100vh-8rem)] w-62 p-3 sticky top-28 shrink-0 border-r border-aside-border-right">
       <div>
         <div className="flex items-end justify-center gap-2 py-3 mb-6 border-b border-aside-border-right/60">
           <span className="text-2xl">♟️</span>
@@ -29,7 +30,7 @@ export default function Sidebar({ currentUser, currentMode, onSelectMode, onLogo
         </nav>
       </div>
 
-      <div className="flex items-center gap-3 p-3 mt-auto bg-white/5 rounded-xl border border-chess-border">
+      <div className="flex items-center gap-3 p-3 mt-auto mb-3 bg-white/5 rounded-xl border border-chess-border">
           <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white">
             {currentUser.username?currentUser.username.charAt(0).toUpperCase():'U'}
           </div>

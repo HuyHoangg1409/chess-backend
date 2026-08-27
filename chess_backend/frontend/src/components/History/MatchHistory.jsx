@@ -80,7 +80,7 @@ export default function MatchHistory({ currentUser, onSelectMatchId }) {
 
                 {/* Cặp đấu */}
                 <div className="flex-1 text-center font-medium text-sm text-white truncate px-2">
-                  <span className="text-emerald-400">
+                  <span>
                     {currentUser?.username || "Bạn"}
                   </span>
                   <span className="mx-2 text-stone-500 text-xs font-bold">
