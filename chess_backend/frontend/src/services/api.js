@@ -142,6 +142,17 @@ export const getAIBestMove = async (fen, difficult) => {
 export const getHistoryList = async (token) => {
   return await request("/matches/my-history", {
     method: "GET",
-    headers: {Authorization: `Bearer ${token}`}
-  })
-}
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
+
+/**
+ * Gửi request đến endpoint /matches/{match_id} để lấy chi tiết ván đấu.
+ * @param {number} matchId - Id của trận đấu
+ */
+export const getMatchDetail = async (matchId, token) => {
+  return await request(`/matches/${matchId}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};

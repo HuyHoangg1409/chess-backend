@@ -1,3 +1,5 @@
+import { Chess } from 'chess.js';
+
 /**
  * Chuyển đổi chuỗi nước đi thành mảng các nước đi riêng lẻ.
  * @param {string} moveString - Chuỗi chứa các nước đi cách nhau bởi " "
@@ -142,3 +144,31 @@ export const getPieceValue = (type) => {
   }
 };
 
+/**
+ * Format lịch sử nước đi theo từng pair.
+ * 
+ * @param {Array} history - Lịch sử các nước đi
+ */
+export const formatMoveHistory = (history = []) => {
+  const pairs = [];
+  for (let i = 0; i < history.length; i += 2) {
+    pairs.push({
+      moveNumber: Math.floor(i / 2) + 1,
+      white: history[i] || "",
+      black: history[i + 1] || "",
+    });
+  }
+  return pairs;
+};
+
+/**
+ * Lấy mảng lịch sử nước đi từ chuỗi pgn.
+ */
+export const getMovesArrayFromPgn = (pgn) => {
+  if (pgn == null) return null;
+  const game = new Chess()
+  game.loadPgn(pgn)
+
+  const moves = game.history();
+  return moves;
+}
