@@ -4,10 +4,12 @@ import { ChessBoardView } from "../ChessBoard/ChessBoardView";
 import MoveHistoryTable from "../MoveHistoryTable";
 import { getMatchDetail } from "../../services/api";
 import { getMovesArrayFromPgn } from "../../utils/chessHelper";
+import { playSound } from "../../utils/sounds";
 
 export default function MatchReview({ matchId, onBack }) {
   const [currentStep, setCurrentStep] = useState(null);
   const [fenList, setFenList] = useState([]);
+  const [soundList, setSoundList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [gameDetail, setGameDetail] = useState({
     id: null,
@@ -30,19 +32,26 @@ export default function MatchReview({ matchId, onBack }) {
           const chess = new Chess();
 
           const fens = [chess.fen()];
+          const sounds = [""];
           chess.loadPgn(data.pgn);
 
           const movesHistoryArray = chess.history();
           chess.reset();
 
           for (const move of movesHistoryArray) {
-            chess.move(move);
+            const aMove = chess.move(move);
+            if (chess.inCheck()) {
+              sounds.push("check");
+            } else if (aMove.captured) {
+              sounds.push("capture");
+            } else sounds.push("move");
             fens.push(chess.fen());
           }
 
-          console.log(fens[0]);
-          console.log(fens[1]);
+          console.log(sounds);
+          console.log(fens);
 
+          setSoundList(sounds);
           setFenList(fens);
           setCurrentStep(fens.length - 1);
         }
@@ -68,18 +77,30 @@ export default function MatchReview({ matchId, onBack }) {
   }, [matchId]);
 
   const handleStart = () => {
+    if (currentStep > 0) {
+      playSound("move");
+    }
     setCurrentStep(0);
   };
 
   const handlePrev = () => {
+    if (currentStep > 0) {
+      playSound("move");
+    }
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
   const handleNext = () => {
+    if (currentStep < fenList.length - 1) {
+      playSound(soundList[currentStep + 1]);
+    }
     setCurrentStep((next) => Math.min(next + 1, fenList.length - 1));
   };
 
   const handleEnd = () => {
+    if (currentStep < fenList.length - 1) {
+      playSound("move");
+    }
     setCurrentStep(fenList.length - 1);
   };
 

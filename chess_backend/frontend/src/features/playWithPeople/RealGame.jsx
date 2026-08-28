@@ -114,10 +114,6 @@ export default function RealGame({ currentUser, setCurrentUser }) {
           const isDraw = !data.winner;
           const myNewElo = isWhite ? data.white_elo : data.black_elo;
           const enmyNewElo = isWhite ? data.black_elo : data.white_elo;
-          console.log("isDraw", isDraw);
-          console.log("isWinner", isWinner);
-          console.log("dataWinner", data.winner);
-          console.log("color", actualColorRef.current);
 
           playSound("game_end");
           setIsCompleted(true);
@@ -149,7 +145,6 @@ export default function RealGame({ currentUser, setCurrentUser }) {
             ...prev,
             pvp_elo: myNewElo,
           }));
-          console.log(score);
 
           break;
         }

@@ -19,7 +19,7 @@ function App() {
   const [currentMode, setCurrentMode] = useState(() => {
     return localStorage.getItem("app_mode") || "real-time";
   });
-  const [selectedMatchId, setSelectedMatchId] = useState(22);
+  const [selectedMatchId, setSelectedMatchId] = useState(null);
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.

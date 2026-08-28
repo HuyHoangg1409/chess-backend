@@ -100,6 +100,7 @@ def get_match_detail(
 
     return {
         "id": db_match_info.game_id,
+        "my_color": "white" if db_match_info.white_player_id == current_user.get("user_id") else "black",
         "result": db_match_info.result,
         "winner": db_match_info.winner_username,
         "fen": db_match_info.final_fen,
