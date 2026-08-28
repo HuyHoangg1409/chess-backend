@@ -48,9 +48,6 @@ export default function MatchReview({ matchId, onBack }) {
             fens.push(chess.fen());
           }
 
-          console.log(sounds);
-          console.log(fens);
-
           setSoundList(sounds);
           setFenList(fens);
           setCurrentStep(fens.length - 1);

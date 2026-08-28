@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-import { getCurrentUser } from "./services/api";
+import { getCurrentUser, getHistoryList } from "./services/api";
 import Login from "./components/Login";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -20,6 +20,9 @@ function App() {
     return localStorage.getItem("app_mode") || "real-time";
   });
   const [selectedMatchId, setSelectedMatchId] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.
@@ -33,7 +36,6 @@ function App() {
         const userData = await getCurrentUser(localToken);
 
         setCurrentUser(userData);
-        // await fetchRandomPuzzle();
       } catch (error) {
         console.error("Token hết hạn hoặc bị lỗi: ", error);
         localStorage.removeItem("access_token");
@@ -46,12 +48,20 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem("app_mode", currentMode);
+
+    if (currentMode === "history") {
+    loadHistory();
+    }
   }, [currentMode]);
 
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     setToken(null);
     setCurrentUser(null);
+    setMatches([]);
+    setHistoryLoaded(false);
+    setHistoryLoading(false);
+    setSelectedMatchId(null);
   };
 
   const handleUpdateElo = (elo_changed) => {
@@ -59,6 +69,24 @@ function App() {
       ...prev,
       elo_rating: Math.max(prev.elo_rating + elo_changed, 0),
     }));
+  };
+
+  const loadHistory = async () => {
+    if (historyLoaded) return;
+
+    try {
+      setHistoryLoading(true);
+
+      const token = localStorage.getItem("access_token");
+      const data = await getHistoryList(token);
+
+      setMatches(data||[]);
+      setHistoryLoaded(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   if (!localStorage.getItem("access_token")) {
@@ -108,11 +136,16 @@ function App() {
             )}
             {currentMode == "history" &&
               (selectedMatchId ? (
-                <MatchReview matchId={selectedMatchId} onBack={() => setSelectedMatchId(null)}/>
+                <MatchReview
+                  matchId={selectedMatchId}
+                  onBack={() => setSelectedMatchId(null)}
+                />
               ) : (
                 <MatchHistory
                   currentUser={currentUser}
                   onSelectMatchId={setSelectedMatchId}
+                  matches={matches}
+                  loading={historyLoading}
                 />
               ))}
           </main>

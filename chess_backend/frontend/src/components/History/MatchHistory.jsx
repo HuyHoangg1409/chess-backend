@@ -1,27 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { getHistoryList } from "../../services/api";
+import React from "react";
 
-export default function MatchHistory({ currentUser, onSelectMatchId }) {
-  const [matches, setMatches] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        const data = await getHistoryList(token);
-        setMatches(data || []);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
-  }, []);
-
-  if (loading) {
+export default function MatchHistory({
+  currentUser,
+  onSelectMatchId,
+  matches,
+  loading,
+}) {
+  if (loading||!matches) {
     return (
       <div className="w-full flex items-center justify-center py-20 text-lg text-stone-400">
         Đang tải lịch sử đấu...
@@ -80,9 +65,7 @@ export default function MatchHistory({ currentUser, onSelectMatchId }) {
 
                 {/* Cặp đấu */}
                 <div className="flex-1 text-center font-medium text-sm text-white truncate px-2">
-                  <span>
-                    {currentUser?.username || "Bạn"}
-                  </span>
+                  <span>{currentUser?.username || "Bạn"}</span>
                   <span className="mx-2 text-stone-500 text-xs font-bold">
                     VS
                   </span>
