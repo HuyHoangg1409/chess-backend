@@ -9,7 +9,8 @@ class UserCreate(BaseModel):
 class UserResponse(BaseModel):
     user_id: int
     username: str
-    elo_rating: int
+    puzzle_elo: int
+    pvp_elo: int
 
     class config:
         from_attributes = True
