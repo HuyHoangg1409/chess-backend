@@ -366,35 +366,82 @@ export default function PuzzleGame({
 
   if (!puzzle || !game) {
     return (
-      <div>
-        <p>Loading Puzzles</p>
+      <div className="flex-1 flex items-center justify-center min-h-[60vh] text-stone-400 text-lg">
+        <span className="animate-pulse">Đang tải câu đố...</span>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="relative w-140 h-fit bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
-        <ChessBoardView
-          key={puzzle.puzzle_id}
-          game={game}
-          boardOrientation={boardOrientation}
-          onPieceDrop={makeAMove}
-          allowDragging={!isFailed}
-          onPromotionCheck={handlePromotionCheck}
-          onPromotionPieceSelect={handlePromotionPieceSelect}
-          boardAnimationDuration={boardAnimationDuration}
-        />
-        <PromotionDialog
-          promotionData={promotionData}
-          onSelect={(pieceType) => handlePromotionPieceSelect(pieceType)}
-        />
-      </div>
-      <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
-        <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
-          <span>
-            Puzzle {puzzle.puzzle_id} - {puzzle.rating} ELO
+    <div className="flex flex-col md:flex-row gap-4 w-full items-start justify-center">
+
+      {/* === CỘT TRÁI: Bàn cờ + info + nút (mobile all-in-one) === */}
+      <div className="flex flex-col gap-2 w-full md:w-auto md:max-w-[480px] lg:max-w-none lg:w-140">
+
+        {/* --- Info bar: Puzzle ID / ELO / Độ khó (Chỉ hiển thị trên Mobile < 768px) --- */}
+        <div className="flex md:hidden items-center justify-between px-1">
+          <div className="flex items-center gap-2 text-sm font-semibold text-stone-300">
+            <span className="bg-white/10 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wider uppercase">
+              #{puzzle.puzzle_id}
+            </span>
+            <span className="text-stone-400">{puzzle.rating} ELO</span>
+            <span className="text-stone-500">·</span>
+            <span className="text-stone-400 text-xs">{puzzle.difficulty}</span>
+          </div>
+          {/* Status text - tinh tế, không chiếm diện tích */}
+          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
+            {message}
           </span>
+        </div>
+
+        {/* --- Bàn cờ --- */}
+        <div className="relative w-full h-fit bg-chess-outline p-3.5 rounded-xl shadow-2xl border border-chess-border">
+          <ChessBoardView
+            key={puzzle.puzzle_id}
+            game={game}
+            boardOrientation={boardOrientation}
+            onPieceDrop={makeAMove}
+            allowDragging={!isFailed}
+            onPromotionCheck={handlePromotionCheck}
+            onPromotionPieceSelect={handlePromotionPieceSelect}
+            boardAnimationDuration={boardAnimationDuration}
+          />
+          <PromotionDialog
+            promotionData={promotionData}
+            onSelect={(pieceType) => handlePromotionPieceSelect(pieceType)}
+          />
+        </div>
+
+        {/* --- Nút bấm: song song hàng ngang trên mobile (< 768px) --- */}
+        <div className="flex flex-row gap-3 w-full md:hidden">
+          <button
+            onClick={fetchRandomPuzzle}
+            className="flex-1 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-sm transition-colors cursor-pointer uppercase"
+          >
+            Next Puzzle
+          </button>
+          {!isFailed ? (
+            <button
+              onClick={handleGetHelp}
+              className="flex-1 py-2.5 rounded-lg bg-stone-700 hover:bg-stone-600 text-white font-bold text-sm transition-colors cursor-pointer uppercase"
+            >
+              Help
+            </button>
+          ) : (
+            <button
+              onClick={showSolution}
+              className="flex-1 py-2.5 rounded-lg bg-stone-700 hover:bg-stone-600 text-white font-bold text-sm transition-colors cursor-pointer uppercase"
+            >
+              Solution
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* === CỘT PHẢI: Panel điều khiển (Tablet & Desktop: >= 768px / md:) === */}
+      <div className="hidden md:flex flex-col w-full md:w-72 lg:w-85 lg:h-full bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
+        <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
+          <span>Puzzle {puzzle.puzzle_id} - {puzzle.rating} ELO</span>
           <p>Difficulty: {puzzle.difficulty}</p>
         </div>
         <div className="p-4 mt-4 rounded-lg bg-button-bg-white text-gray-950">
@@ -425,6 +472,6 @@ export default function PuzzleGame({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

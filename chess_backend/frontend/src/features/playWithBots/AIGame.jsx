@@ -4,6 +4,7 @@ import { Chess, Move } from "chess.js";
 import { ChessBoardView } from "../../components/ChessBoard/ChessBoardView";
 import { getAIBestMove } from "../../services/api";
 import MoveHistoryTable from "../../components/MoveHistoryTable";
+import CapturedPieces from "../../components/CapturedPieces";
 
 const getCapturedPieces = (game) => {
   const initialQuantities = {
@@ -227,72 +228,119 @@ export default function AIGame({ currentUser }) {
   const botAdvantage = botCapturedValue - playerCapturedValue;
 
   return (
-    <>
-      <div className="flex flex-col gap-3.5 w-140 bg-chess-outline p-4 rounded-xl shadow-2xl border border-chess-border">
-        <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-8">
-          <div className="flex items-center gap-2">
-            <span>Bot (Độ khó {difficulty})</span>
-            {isAIThinking && (
-              <span className="text-xs text-[#81b64c] font-normal animate-pulse">
-                (Đang nghĩ...)
-              </span>
-            )}
-          </div>
-          {botCaptured.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-button-bg-white px-2 py-0.5 rounded-md border border-stone-800 shadow-inner">
-              <div className="flex -space-x-2">
-                {botCaptured.map((piece, idx) => (
-                  <img
-                    key={idx}
-                    src={`pieces/${selectedColor === "white" ? "w" : "b"}${piece}.svg`}
-                    alt={piece}
-                    className="w-6 h-6 object-contain"
-                  />
-                ))}
-              </div>
-              {botAdvantage > 0 && (
-                <span className="ml-1 text-xs font-bold text-green-400">+{botAdvantage}</span>
-              )}
-            </div>
-          )}
+    <div className="flex flex-col lg:flex-row gap-4 w-full items-start">
+
+      {/* === CỘT TRÁI: Bàn cờ (+ controls mobile bên dưới) === */}
+      <div className="flex flex-col gap-2 w-full lg:w-140">
+
+        {/* --- Status bar (chỉ hiện mobile) --- */}
+        <div className="lg:hidden flex items-center justify-between px-1">
+          <span className="text-sm font-semibold text-stone-300">
+            Chơi với máy &middot; Độ khó {difficulty}
+          </span>
+          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
+            {message}
+          </span>
         </div>
 
-        <ChessBoardView
-          key={`board-${selectedColor}`}
-          game={game}
-          onPieceDrop={handlePieceDrop}
-          boardOrientation={selectedColor}
-          allowDragging={!isCompleted && gameStarted}
-        />
-
-        <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-8">
-          <div className="flex items-center gap-2">
-            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white">
-              {currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <span>{currentUser?.username || "Bạn"}</span>
-          </div>
-          {playerCaptured.length > 0 && (
-            <div className="flex items-center gap-1.5 bg-button-bg-white px-2 py-0.5 rounded-md border border-stone-800 shadow-inner">
-              <div className="flex -space-x-2">
-                {playerCaptured.map((piece, idx) => (
-                  <img
-                    key={idx}
-                    src={`pieces/${selectedColor === "white" ? "b" : "w"}${piece}.svg`}
-                    alt={piece}
-                    className="w-6 h-6 object-contain"
-                  />
-                ))}
-              </div>
-              {playerAdvantage > 0 && (
-                <span className="ml-1 text-xs font-bold text-green-500">+{playerAdvantage}</span>
+        {/* --- Khung bàn cờ (giữ nguyên player/bot info rows) --- */}
+        <div className="flex flex-col gap-3.5 w-full bg-chess-outline p-4 rounded-xl shadow-2xl border border-chess-border">
+          <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-8 gap-2">
+            <div className="flex items-center gap-2 min-w-0 truncate">
+              <span className="truncate">Bot (Độ khó {difficulty})</span>
+              {isAIThinking && (
+                <span className="text-xs text-[#81b64c] font-normal animate-pulse shrink-0">
+                  (Đang nghĩ...)
+                </span>
               )}
             </div>
-          )}
+            <CapturedPieces
+              captured={botCaptured}
+              color={selectedColor === "white" ? "w" : "b"}
+              advantage={botAdvantage}
+            />
+          </div>
+
+          <ChessBoardView
+            key={`board-${selectedColor}`}
+            game={game}
+            onPieceDrop={handlePieceDrop}
+            boardOrientation={selectedColor}
+            allowDragging={!isCompleted && gameStarted}
+          />
+
+          <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-8 gap-2">
+            <div className="flex items-center gap-2 min-w-0 truncate">
+              <div className="flex justify-center items-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-600 font-semibold text-white shrink-0 text-xs sm:text-sm">
+                {currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U'}
+              </div>
+              <span className="truncate">{currentUser?.username || "Bạn"}</span>
+            </div>
+            <CapturedPieces
+              captured={playerCaptured}
+              color={selectedColor === "white" ? "b" : "w"}
+              advantage={playerAdvantage}
+            />
+          </div>
+        </div>
+
+        {/* --- Controls dưới bàn cờ (Mobile only) --- */}
+        <div className="flex flex-col gap-2 lg:hidden">
+          {/* Hàng 1: Chọn độ khó + màu quân */}
+          <div className="flex gap-2">
+            <select
+              value={difficulty || 1}
+              onChange={(e) => handleSelectDifficulty(Number(e.target.value))}
+              disabled={isAIThinking || gameStarted}
+              className="flex-1 appearance-none bg-[#1e1d1b] rounded-xl px-3 py-2.5 text-sm font-bold text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#81b64c] cursor-pointer transition-all disabled:opacity-50"
+            >
+              <option value={1}>Dễ</option>
+              <option value={2}>Vừa</option>
+              <option value={3}>Khó</option>
+              <option value={4}>Cực khó</option>
+            </select>
+            <div className="flex gap-1 p-1 bg-[#1e1d1b] rounded-xl">
+              <button
+                type="button"
+                disabled={gameStarted}
+                onClick={() => setSelectedColor("white")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                  selectedColor === "white" ? "bg-stone-100 text-stone-950" : "text-stone-400 hover:text-stone-200"
+                }`}
+              >Trắng</button>
+              <button
+                type="button"
+                disabled={gameStarted}
+                onClick={() => setSelectedColor("black")}
+                className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all cursor-pointer disabled:opacity-50 ${
+                  selectedColor === "black" ? "bg-stone-800 text-white" : "text-stone-400 hover:text-stone-200"
+                }`}
+              >Đen</button>
+            </div>
+          </div>
+          {/* Hàng 2: Chơi ngay / Đầu hàng */}
+          <div className="flex gap-3">
+            <button
+              onClick={gameStarted ? handleGameRestart : handleGameStart}
+              className="flex-1 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-sm transition-colors cursor-pointer"
+            >
+              {gameStarted ? "Chơi lại" : "Chơi ngay"}
+            </button>
+            <button
+              type="button"
+              disabled={!gameStarted}
+              onClick={handleGameResign}
+              title="Đầu hàng"
+              className="px-4 py-2.5 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 font-bold text-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              🏳️ Đầu hàng
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
+      {/* === CỘT PHẢI: Panel điều khiển (Desktop only) === */}
+      <div className="hidden lg:flex lg:h-full flex-col w-85 bg-chess-outline p-3.5 rounded-xl shadow-xl border border-chess-border">
         <div className="pl-3 border-b border-chess-border pb-4 text-xl font-semibold uppercase tracking-wider">
           <span>Chơi với máy</span>
           <p>Độ khó: {difficulty}</p>
@@ -313,18 +361,10 @@ export default function AIGame({ currentUser }) {
                 disabled={isAIThinking || gameStarted}
                 className="w-full text-left appearance-none bg-[#1e1d1b] rounded-xl px-4 py-3 text-base font-bold text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#81b64c] cursor-pointer transition-all disabled:opacity-50"
               >
-                <option value={1} className="bg-[#262522] py-2">
-                  Dễ
-                </option>
-                <option value={2} className="bg-[#262522] py-2">
-                  Vừa
-                </option>
-                <option value={3} className="bg-[#262522] py-2">
-                  Khó
-                </option>
-                <option value={4} className="bg-[#262522] py-2">
-                  Cực khó
-                </option>
+                <option value={1} className="bg-[#262522] py-2">Dễ</option>
+                <option value={2} className="bg-[#262522] py-2">Vừa</option>
+                <option value={3} className="bg-[#262522] py-2">Khó</option>
+                <option value={4} className="bg-[#262522] py-2">Cực khó</option>
               </select>
             </div>
             <div className="grow">
@@ -332,29 +372,23 @@ export default function AIGame({ currentUser }) {
                 <button
                   type="button"
                   disabled={gameStarted}
-                  onClick={() => {
-                    setSelectedColor("white");
-                  }}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${selectedColor === "white"
-                    ? "bg-stone-100 text-stone-950 shadow-md ring-1 ring-white"
-                    : "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
-                    }`}
-                >
-                  Trắng
-                </button>
+                  onClick={() => setSelectedColor("white")}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                    selectedColor === "white"
+                      ? "bg-stone-100 text-stone-950 shadow-md ring-1 ring-white"
+                      : "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
+                  }`}
+                >Trắng</button>
                 <button
                   type="button"
                   disabled={gameStarted}
-                  onClick={() => {
-                    setSelectedColor("black");
-                  }}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${selectedColor === "black"
-                    ? "bg-stone-800 text-white shadow-md ring-1 ring-stone-600"
-                    : "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
-                    }`}
-                >
-                  Đen
-                </button>
+                  onClick={() => setSelectedColor("black")}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                    selectedColor === "black"
+                      ? "bg-stone-800 text-white shadow-md ring-1 ring-stone-600"
+                      : "text-stone-400 hover:text-stone-200 hover:bg-stone-800"
+                  }`}
+                >Đen</button>
               </div>
             </div>
             <button
@@ -364,9 +398,7 @@ export default function AIGame({ currentUser }) {
               title="Đầu hàng"
               className="flex items-center justify-center px-3 py-3 rounded-lg text-xl transition-all duration-200 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-red-500 hover:text-red-400 hover:bg-stone-800 group"
             >
-              <span className="inline-block transition-transform duration-200 group-hover:scale-125">
-                🏳️
-              </span>
+              <span className="inline-block transition-transform duration-200 group-hover:scale-125">🏳️</span>
             </button>
           </div>
           <div className="flex flex-col gap-4 mt-auto text-xl text-white font-semibold">
@@ -379,6 +411,7 @@ export default function AIGame({ currentUser }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
+

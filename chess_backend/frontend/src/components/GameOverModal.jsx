@@ -29,7 +29,7 @@ export function GameOverModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs">
-      <div className="bg-chess-bg min-h-80 min-w-md flex flex-col gap-5 p-4 border border-chess-border rounded-2xl">
+      <div className="bg-chess-bg min-h-80 w-[90vw] max-w-md flex flex-col gap-5 p-4 border border-chess-border rounded-2xl">
         {/* Tiêu đề */}
         <div className="flex flex-col items-center">
           <h2 className="text-2xl font-black tracking-wider">
@@ -47,7 +47,7 @@ export function GameOverModal({
                 ? currentUser.username.charAt(0).toUpperCase()
                 : "U"}
             </div>
-            <div className="flex flex-col items-center fixed mt-8">
+            <div className="flex flex-col items-center mt-1">
               <span className="">{currentUser.username || "Bạn"}</span>
               <span
                 className={`text-xs ${myEloChange < 0 ? "text-red-500" : "text-green-500"}`}
@@ -89,7 +89,7 @@ export function GameOverModal({
                 ? opponent.username.charAt(0).toUpperCase()
                 : "U"}
             </div>
-            <div className="flex flex-col items-center fixed mt-8">
+            <div className="flex flex-col items-center mt-1">
               <span className="">{opponent?.username || "Bạn"}</span>
               <span
                 className={`text-xs ${opponentEloChange < 0 ? "text-red-500" : "text-green-500"}`}

@@ -3,7 +3,7 @@ import React from "react";
 export default function Footer() {
   return (
     <footer className="w-full">
-      <div className="flex justify-center gap-4 mt-10">
+      <div className="hidden md:flex justify-center gap-4 mt-10">
         <a href="" className="hover:text-white transition-colors">
           Privacy
         </a>

@@ -6,6 +6,7 @@ import { playSound } from "../../utils/sounds";
 import { getCapturedPieces, getPieceValue } from "../../utils/chessHelper";
 import { useChessTimer } from "../../hooks/useChessTimer";
 import { GameOverModal } from "../../components/GameOverModal";
+import CapturedPieces from "../../components/CapturedPieces";
 
 export default function RealGame({ currentUser, setCurrentUser }) {
   const [game, setGame] = useState(new Chess());
@@ -404,26 +405,44 @@ export default function RealGame({ currentUser, setCurrentUser }) {
   const opponentAdvantage = opponentCapturedValue - playerCapturedValue;
 
   return (
-    <>
-      {/* Khung bàn cờ bên trái: sử dụng h-fit self-start để ôm vừa vặn nội dung, không bị kéo dãn */}
-      <div className="flex flex-col gap-3 w-140 bg-chess-outline p-4 rounded-xl shadow-2xl border border-chess-border h-fit self-start">
+    <div className="flex flex-col lg:flex-row gap-4 w-full items-start">
+
+      {/* === CỘT TRÁI: Bàn cờ + controls mobile === */}
+      <div className="flex flex-col gap-2 w-full lg:w-140">
+
+        {/* --- Status bar (Mobile only) --- */}
+        <div className="lg:hidden flex items-center justify-between px-1">
+          <span className="text-sm font-semibold text-stone-300">
+            {isInRoom
+              ? opponent?.username
+                ? `vs ${opponent.username}`
+                : "Đang chờ đối thủ..."
+              : "Chơi với người"}
+          </span>
+          <span className="text-xs font-semibold text-stone-400 uppercase tracking-wider truncate max-w-[50%]">
+            {message}
+          </span>
+        </div>
+
+        {/* --- Bàn cờ (giữ nguyên player/timer/captured rows) --- */}
+        <div className="flex flex-col gap-3 w-full bg-chess-outline p-4 rounded-xl shadow-2xl border border-chess-border h-fit self-start">
         {/* Thanh thông tin đối thủ (trên) */}
-        <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10">
-          <div className="flex items-center gap-3">
-            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white text-sm border border-stone-600">
+        <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex justify-center items-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-600 font-semibold text-white text-xs sm:text-sm border border-stone-600 shrink-0">
               {opponent?.username
                 ? opponent.username.charAt(0).toUpperCase()
                 : "?"}
             </div>
-            <div className="flex flex-col">
-              <span className="text-stone-200">
+            <div className="flex flex-col min-w-0">
+              <span className="text-stone-200 text-xs sm:text-sm truncate">
                 {isInRoom
                   ? opponent?.username
                     ? opponent.username
                     : "Đang chờ đối thủ..."
                   : "Đối thủ"}
               </span>
-              <span className="text-xs text-stone-500 font-normal font-mono">
+              <span className="text-[10px] sm:text-xs text-stone-500 font-normal font-mono truncate">
                 {opponent?.elo !== undefined && opponent?.elo !== null
                   ? `${opponent.elo} ELO`
                   : isInRoom && opponent?.username
@@ -433,28 +452,14 @@ export default function RealGame({ currentUser, setCurrentUser }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {opponentCaptured.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-button-bg-white px-2 py-0.5 rounded-md border border-stone-800 shadow-inner">
-                <div className="flex -space-x-2">
-                  {opponentCaptured.map((piece, idx) => (
-                    <img
-                      key={idx}
-                      src={`pieces/${actualColor === "white" ? "w" : "b"}${piece}.svg`}
-                      alt={piece}
-                      className="w-5 h-5 object-contain"
-                    />
-                  ))}
-                </div>
-                {opponentAdvantage > 0 && (
-                  <span className="ml-1 text-xs font-bold text-green-600">
-                    +{opponentAdvantage}
-                  </span>
-                )}
-              </div>
-            )}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <CapturedPieces
+              captured={opponentCaptured}
+              color={actualColor === "white" ? "w" : "b"}
+              advantage={opponentAdvantage}
+            />
 
-            <div className="bg-[#1e1d1b] px-3 py-1.5 rounded-lg border border-stone-800 font-mono text-sm font-bold text-stone-300 shadow-inner">
+            <div className="bg-[#1e1d1b] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-stone-800 font-mono text-xs sm:text-sm font-bold text-stone-300 shadow-inner">
               {formatTime(opponentTime)}
             </div>
           </div>
@@ -490,18 +495,18 @@ export default function RealGame({ currentUser, setCurrentUser }) {
         />
 
         {/* Thanh thông tin người chơi (dưới) */}
-        <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10">
-          <div className="flex items-center gap-3">
-            <div className="flex justify-center items-center w-8 h-8 rounded-full bg-emerald-600 font-semibold text-white text-sm shadow-md">
+        <div className="flex items-center justify-between text-stone-300 text-sm font-semibold px-1 h-10 gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex justify-center items-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-600 font-semibold text-white text-xs sm:text-sm shadow-md shrink-0">
               {currentUser?.username
                 ? currentUser.username.charAt(0).toUpperCase()
                 : "U"}
             </div>
-            <div className="flex flex-col">
-              <span className="text-stone-100 font-bold">
+            <div className="flex flex-col min-w-0">
+              <span className="text-stone-100 font-bold text-xs sm:text-sm truncate">
                 {currentUser?.username || "Bạn"}
               </span>
-              <span className="text-xs text-stone-500 font-normal font-mono">
+              <span className="text-[10px] sm:text-xs text-stone-500 font-normal font-mono truncate">
                 {currentUser?.pvp_elo
                   ? `${currentUser.pvp_elo} ELO`
                   : "1200 ELO"}
@@ -509,36 +514,88 @@ export default function RealGame({ currentUser, setCurrentUser }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {playerCaptured.length > 0 && (
-              <div className="flex items-center gap-1.5 bg-button-bg-white px-2 py-0.5 rounded-md border border-stone-800 shadow-inner">
-                <div className="flex -space-x-2">
-                  {playerCaptured.map((piece, idx) => (
-                    <img
-                      key={idx}
-                      src={`pieces/${actualColor === "white" ? "b" : "w"}${piece}.svg`}
-                      alt={piece}
-                      className="w-5 h-5 object-contain"
-                    />
-                  ))}
-                </div>
-                {playerAdvantage > 0 && (
-                  <span className="ml-1 text-xs font-bold text-green-600">
-                    +{playerAdvantage}
-                  </span>
-                )}
-              </div>
-            )}
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <CapturedPieces
+              captured={playerCaptured}
+              color={actualColor === "white" ? "b" : "w"}
+              advantage={playerAdvantage}
+            />
 
-            <div className="bg-[#1e1d1b] px-3 py-1.5 rounded-lg border border-stone-800 font-mono text-sm font-bold text-white shadow-inner">
+            <div className="bg-[#1e1d1b] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-stone-800 font-mono text-xs sm:text-sm font-bold text-white shadow-inner">
               {formatTime(playerTime)}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Khung điều khiển bên phải*/}
-      <div className="flex flex-col w-85 bg-chess-outline p-4 rounded-xl shadow-xl border border-chess-border h-fit self-start">
+        {/* --- Controls dưới bàn cờ (Mobile only) --- */}
+        <div className="flex flex-col gap-2 lg:hidden">
+          {!isInRoom ? (
+            /* Tạo hoặc nhập phòng */
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={roomIdInput}
+                onChange={(e) => setRoomIdInput(e.target.value)}
+                placeholder="Mã phòng"
+                className="flex-1 bg-[#1e1d1b] border border-stone-700 focus:border-green-500 rounded-xl px-3 py-2.5 text-sm text-stone-100 placeholder-stone-500 focus:outline-none transition-all"
+              />
+              <button
+                onClick={handleJoinRoom}
+                disabled={!roomIdInput.trim()}
+                className="px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white font-bold text-sm rounded-xl cursor-pointer"
+              >
+                Vào
+              </button>
+              <button
+                onClick={handleCreateRoom}
+                className="px-3 py-2.5 bg-stone-700 hover:bg-stone-600 text-white font-bold text-sm rounded-xl cursor-pointer"
+              >
+                Random
+              </button>
+            </div>
+          ) : (
+            /* Đã vào phòng */
+            <div className="flex gap-2">
+              {gameStarted && (
+                <>
+                  <button
+                    onClick={handleResign}
+                    className="flex-1 py-2.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white font-bold text-sm cursor-pointer flex items-center justify-center gap-1"
+                  >
+                    🏳️ Đầu hàng
+                  </button>
+                  <button
+                    onClick={handleDraw}
+                    disabled={hasOfferedDrawRef.current}
+                    className="flex-1 py-2.5 rounded-lg bg-stone-600 hover:bg-stone-500 text-white font-bold text-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    🤝 Cầu hòa
+                  </button>
+                </>
+              )}
+              {!gameStarted && isCompleted && (
+                <button
+                  onClick={handlePlayAgain}
+                  disabled={hasOfferedPlayAgainRef.current}
+                  className="flex-1 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white font-bold text-sm cursor-pointer disabled:opacity-50"
+                >
+                  Chơi lại
+                </button>
+              )}
+              <button
+                onClick={handleLeaveRoom}
+                className="px-4 py-2.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold text-sm cursor-pointer"
+              >
+                Rời
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* === CỘT PHẢI: Panel điều khiển (Desktop only) === */}
+      <div className="hidden lg:flex flex-col w-85 bg-chess-outline p-4 rounded-xl shadow-xl border border-chess-border h-fit self-start">
         {/* Header */}
         <div className="border-b border-chess-border pb-3">
           <div className="flex items-center justify-between">
@@ -669,6 +726,6 @@ export default function RealGame({ currentUser, setCurrentUser }) {
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

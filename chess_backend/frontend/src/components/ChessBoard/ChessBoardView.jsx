@@ -21,6 +21,7 @@ const PUZZLE_BOARD_OPTIONS = (
 
   animationDurationInMs: boardAnimationDuration,
   draggingPieceGhostStyle: { opacity: 0, filter: `blur(0px)` },
+  customBoardStyle: { touchAction: "none" },
   darkSquareStyle: { backgroundColor: "var(--color-chess-dark)" },
   lightSquareStyle: { backgroundColor: "var(--color-chess-light)" },
 });
@@ -35,7 +36,7 @@ export const ChessBoardView = ({
   boardAnimationDuration,
 }) => {
   return (
-    <div>
+    <div className="touch-none select-none">
       <Chessboard
         options={PUZZLE_BOARD_OPTIONS(
           game,

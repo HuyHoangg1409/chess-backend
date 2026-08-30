@@ -87,17 +87,17 @@ export default function Register({ switchToLogin }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-chess-bg text-text-white">
-      <div className="w-full max-w-md bg-chess-outline p-8 pt-4 rounded-2xl border border-chess-border">
-        <div className="font-semibold text-center mb-8">
-          <h1 className="text-5xl text-green-500">Chess</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-chess-bg text-text-white p-4">
+      <div className="w-full max-w-[360px] sm:max-w-md bg-chess-outline p-6 rounded-2xl border border-chess-border">
+        <div className="font-semibold text-center mb-6">
+          <h1 className="text-4xl text-green-500">Chess</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label
               htmlFor="username-input"
-              className="block font-semibold mb-2"
+              className="block font-semibold mb-1 text-sm sm:text-base"
             >
               Username
             </label>
@@ -110,14 +110,14 @@ export default function Register({ switchToLogin }) {
               onChange={handleChange}
               autoComplete="off"
               placeholder="Username"
-              className="w-full px-4 py-3 bg-chess-bg rounded-lg border border-chess-border focus:outline-none focus:border-green-400 transition-colors"
+              className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 bg-chess-bg rounded-lg border border-chess-border focus:outline-none focus:border-green-400 transition-colors"
             />
           </div>
 
           <div>
             <label
               htmlFor="password-input"
-              className="block font-semibold mb-2"
+              className="block font-semibold mb-1 text-sm sm:text-base"
             >
               Password
             </label>
@@ -130,14 +130,14 @@ export default function Register({ switchToLogin }) {
               onChange={handleChange}
               autoComplete="new-password"
               placeholder="Password"
-              className="w-full px-4 py-3 bg-chess-bg rounded-lg border border-chess-border focus:outline-none focus:border-green-400 transition-colors"
+              className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 bg-chess-bg rounded-lg border border-chess-border focus:outline-none focus:border-green-400 transition-colors"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword-input"
-              className="block font-semibold mb-2"
+              className="block font-semibold mb-1 text-sm sm:text-base"
             >
               Confirm Password
             </label>
@@ -150,23 +150,23 @@ export default function Register({ switchToLogin }) {
               onChange={handleChange}
               autoComplete="new-password"
               placeholder="Confirm Password"
-              className="w-full px-4 py-3 bg-chess-bg rounded-lg border border-chess-border focus:outline-none focus:border-green-400 transition-colors"
+              className="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 bg-chess-bg rounded-lg border border-chess-border focus:outline-none focus:border-green-400 transition-colors"
             />
           </div>
 
           {error && (
-            <p className="text-red-500 font-semibold text-center">{error}</p>
+            <p className="text-red-500 font-semibold text-center text-sm">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 text-xl font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
+            className="w-full py-3 text-lg font-bold bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer transition-colors duration-300 tracking-wider"
           >
             {loading ? "Đang xử lý..." : "ĐĂNG KÝ"}
           </button>
 
-          <p className="flex gap-4 justify-center text-center">
+          <p className="flex gap-2 justify-center text-center text-sm">
             Đã có tài khoản?
             <button
               type="button"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
 import { getCurrentUser, getHistoryList } from "./services/api";
 import Login from "./components/Login";
@@ -23,6 +23,8 @@ function App() {
   const [matches, setMatches] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(true);
+  // Trạng thái mở/đóng Drawer Sidebar (dùng cho Mobile & Tablet)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   /**
    * Effect tự động chạy và cập nhật thông tin người dùng vào currentUser khi state "token" thay đổi.
@@ -109,18 +111,27 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-chess-bg text-text-white px-6">
-      <Header currentUser={currentUser} />
+    // overflow-x-hidden ngăn horizontal scroll trên Mobile khi drawer trượt ra
+    <div className="flex flex-col min-h-screen bg-chess-bg text-text-white overflow-x-hidden">
+      <Header
+        currentUser={currentUser}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+      />
 
-      <div className="flex justify-between w-full max-w-7xl flex-1">
+      {/* Wrapper: sidebar + main content */}
+      <div className="flex flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6">
         <Sidebar
           currentUser={currentUser}
           currentMode={currentMode}
           onSelectMode={setCurrentMode}
           onLogout={handleLogout}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
         />
-        <div className="flex flex-col justify-between flex-1 min-w-0 pb-6">
-          <main className="flex justify-around w-full max-w-6xl">
+
+        {/* Main content: flex-1 để chiếm không gian còn lại, min-w-0 chống overflow */}
+        <div className="flex flex-col justify-between flex-1 min-w-0 pb-6 lg:pl-6">
+          <main className="flex w-full py-4">
             {currentMode == "puzzle" && (
               <PuzzleGame
                 currentUser={currentUser}
