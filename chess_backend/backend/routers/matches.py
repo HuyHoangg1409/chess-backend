@@ -11,7 +11,7 @@ from ..models import GameMatches, User
 router = APIRouter(prefix="/matches", tags=["matches"])
 
 
-@router.get("/my-history")
+@router.get("")
 def get_my_match_history(
     db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ):

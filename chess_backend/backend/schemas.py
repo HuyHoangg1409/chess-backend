@@ -20,7 +20,7 @@ class PuzzleCreate(BaseModel):
     fen_position: str
     correct_moves: str
     difficulty: str
-    rating: str
+    rating: int
 
 
 class PuzzleResponse(BaseModel):
@@ -35,7 +35,6 @@ class PuzzleResponse(BaseModel):
 
 
 class PuzzleSubmit(BaseModel):
-    puzzle_id: int
     user_move: str
 
 
@@ -46,8 +45,7 @@ class PuzzleResultResponse(BaseModel):
     message: str
 
 
-class HelpRequest(BaseModel):
-    puzzle_id: int
+class HintRequest(BaseModel):
     move_index: int
 
 

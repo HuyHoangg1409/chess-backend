@@ -26,7 +26,7 @@ const request = async (endpoint, options = {}) => {
  * @returns {Promise<Object>} Dữ liệu JSON chứa thông tin puzzle
  */
 export const getRandomPuzzle = async () => {
-  return await request("/puzzles/randomWithoutDifficulty", { method: "GET" });
+  return await request("/puzzles/random", { method: "GET" });
 };
 
 /**
@@ -35,7 +35,7 @@ export const getRandomPuzzle = async () => {
  * @returns {Promise<Object>} Dữ liệu JSON chứa thông tin puzzle
  */
 export const getPuzzleById = async (puzzleId) => {
-  return await request("/puzzles/${puzzleId}", { method: "GET" });
+  return await request(`/puzzles/${puzzleId}`, { method: "GET" });
 };
 
 /**
@@ -82,7 +82,7 @@ export const getCurrentUser = async (token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "is_correct", "is_completed" và "message"
  */
 export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
-  return await request("/puzzles/check", {
+  return await request(`/puzzles/${puzzle_id}/check`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify({ puzzle_id: puzzle_id, user_move: userAnswer }),
@@ -97,7 +97,7 @@ export const checkPuzzle = async (puzzle_id, userAnswer, token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "hint" là nước đi chính xác tại moveIndex
  */
 export const getHelp = async (puzzle_id, moveIndex, token) => {
-  return await request("/puzzles/help", {
+  return await request(`/puzzles/${puzzle_id}/hints`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -114,7 +114,7 @@ export const getHelp = async (puzzle_id, moveIndex, token) => {
  * @returns {Promise<Object>} Dữ liệu JSON trả về từ server bao gồm "message"
  */
 export const addPuzzleHistory = async (puzzle_id, status, token) => {
-  return await request("/puzzles/history/add", {
+  return await request("/puzzle-histories", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -140,7 +140,7 @@ export const getAIBestMove = async (fen, difficult) => {
  * Gửi request đến endpoint /matches/my-history để lấy danh sách lịch sử đấu.
  */
 export const getHistoryList = async (token) => {
-  return await request("/matches/my-history", {
+  return await request("/matches", {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
   });
